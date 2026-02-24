@@ -1,0 +1,82 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ============================================================================
+  # RUST WORKSPACE — fmt, clippy, build, test
+  # ============================================================================
+  workspace-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc python3 nodejs default-jdk golang
+
+      - name: Check Formatting
+        run: cargo fmt --all -- --check
+
+      - name: Run Clippy
+        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+
+      - name: Build Workspace
+        run: cargo build --verbose --workspace
+
+      - name: Run Tests (Workspace)
+        run: cargo test --workspace --verbose
+        env:
+          RUST_BACKTRACE: 1
+
+      - name: Install cargo-audit & cargo-deny
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit,cargo-deny
+
+      - name: Security Check (cargo audit)
+        run: cargo audit
+
+      - name: License & Dependency Check (cargo deny)
+        run: cargo deny check
+
+  # ============================================================================
+  # C REFERENCE — AddressSanitizer build, portable backend, smoke test
+  # ============================================================================
+  c-reference-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install ASan-capable GCC
+        run: sudo apt-get update && sudo apt-get install -y gcc
+
+      - name: Build C Reference with ASan/UBSan + Portable (forced)
+        run: |
+          gcc -o asan_test \
+            algorithms/tachyon/c-reference/tachyon_dispatcher.c \
+            algorithms/tachyon/c-reference/tachyon_portable.c \
+            algorithms/tachyon/c-reference/main.c \
+            -I algorithms/tachyon/c-reference \
+            -fsanitize=address,undefined -fno-sanitize-recover=all -g -O1 -Wall -Wextra -Werror \
+            -DFORCE_PORTABLE
+
+      - name: Smoke-test under ASan and UBSan
+        run: |
+          OUTPUT=$(./asan_test "hello world")
+          echo "Output: $OUTPUT"
+          echo "$OUTPUT" | grep -qE '^Tachyon Hash: [0-9a-f]{64}$'
+          echo "✓ ASan smoke test passed"

@@ -1,0 +1,36 @@
+# ==============================================================================
+# TACHYON CONTINUOUS FUZZING ENVIRONMENT 
+# ==============================================================================
+# Usage:
+#   docker build -f Dockerfile.fuzz -t tachyon-fuzz .
+#   
+# Run Security Fuzzer:
+#   docker run -it --rm tachyon-fuzz cargo fuzz run fuzz_security
+#
+# Run Streaming Fuzzer:
+#   docker run -it --rm tachyon-fuzz cargo fuzz run fuzz_streaming
+# ==============================================================================
+
+FROM rustlang/rust:nightly-bookworm
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    cmake \
+    clang \
+    llvm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install cargo-fuzz
+RUN cargo install cargo-fuzz
+
+# Set up the workspace
+WORKDIR /usr/src/tachyon
+COPY . .
+
+# Pre-build the fuzzer targets to ensure they cache
+WORKDIR /usr/src/tachyon/algorithms/tachyon/fuzz
+RUN cargo +nightly fuzz build
+
+# Default command: show available targets
+CMD ["cargo", "fuzz", "list"]

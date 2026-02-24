@@ -1,0 +1,152 @@
+# =============================================================================
+# BUILD ARTIFACTS
+# =============================================================================
+
+# Rust (workspace — alle target/ Ordner)
+target/
+
+# Cargo.lock: In Workspace mit Binaries committen
+# (nur bei reinen Library-Crates ignorieren)
+# Cargo.lock  ← bewusst NICHT ignoriert
+
+# =============================================================================
+# BINDINGS BUILD OUTPUT
+# =============================================================================
+
+# Python
+**/__pycache__/
+bindings/python/*.egg-info/
+bindings/python/dist/
+bindings/python/build/
+*.pyc
+*.pyo
+
+# Node.js
+bindings/node/node_modules/
+bindings/node/build/
+bindings/node/*.node
+bindings/node/*.tgz
+
+# Java
+bindings/java/**/*.class
+bindings/java/*.jar
+bindings/java/target/
+
+# Go
+bindings/go/tachyon
+bindings/go/test
+
+# C Bindings
+bindings/c/*.so
+bindings/c/*.a
+bindings/c/*.o
+
+# =============================================================================
+# C REFERENCE — COMPILED BINARIES
+# =============================================================================
+
+# Compiled test/reference binaries (built by c_reference_cross_arch test)
+algorithms/tachyon/tachyon_opt_auto
+algorithms/tachyon/tachyon_opt_aesni
+algorithms/tachyon/tachyon_opt_portable
+algorithms/tachyon/c-reference/tachyon_ref
+
+# Generic compiled artifacts
+*.o
+*.so
+*.dylib
+*.dll
+*.a
+asan_test
+
+# =============================================================================
+# VERIFICATION SUITE
+# =============================================================================
+
+# External repos (cloned, not committed)
+verification/smhasher/
+verification/PractRand/
+verification/TestU01-2009/
+
+# Build artifacts from kits
+verification/smhasher_kit/libtachyon.so
+verification/smhasher_kit/libtachyon.a
+verification/testu01_kit/testu01_stdin
+
+# Test result logs
+verification/practrand_kit/*.txt
+
+# =============================================================================
+# IDE & EDITOR
+# =============================================================================
+
+# VSCode
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# JetBrains
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+
+# =============================================================================
+# OS FILES
+# =============================================================================
+
+.DS_Store
+.DS_Store?
+Thumbs.db
+desktop.ini
+
+# =============================================================================
+# TEST & COVERAGE ARTIFACTS
+# =============================================================================
+
+# Criterion benchmark cache
+target/criterion/
+
+# Coverage
+*.profraw
+*.profdata
+coverage/
+lcov.info
+
+# =============================================================================
+# MISC
+# =============================================================================
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
+
+# =============================================================================
+# RAG 
+# =============================================================================
+
+.tachyon-rag/.venv/
+.tachyon-rag/venv/
+.tachyon-rag/ENV/
+.tachyon-rag/env/
+
+.tachyon-rag/lancedb_data/
+
+.tachyon-rag/__pycache__/
+.tachyon-rag/*.pyc
+.tachyon-rag/*.pyo
+.tachyon-rag/*.pyd
+
+.tachyon-rag/mcp_config.json

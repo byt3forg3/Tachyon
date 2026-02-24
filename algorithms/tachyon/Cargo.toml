@@ -1,0 +1,68 @@
+
+# =============================================================================
+# PACKAGE METADATA
+# =============================================================================
+
+[package]
+name = "tachyon"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+authors = ["byt3forg3 <260008633+byt3forg3@users.noreply.github.com>"]
+description = "Tachyon is an experimental hash function leveraging AVX-512 + VAES hardware instructions for high-throughput hashing."
+repository = "https://github.com/byt3forg3/tachyon"
+homepage = "https://github.com/byt3forg3/tachyon"
+documentation = "https://docs.rs/tachyon"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["crypto", "hash", "simd", "avx512", "no-std"]
+categories = ["cryptography", "algorithms", "no-std"]
+
+# =============================================================================
+# LIBRARIES & BINARIES
+# =============================================================================
+
+[lib]
+name = "tachyon"
+path = "src/lib.rs"
+crate-type = ["rlib", "cdylib", "staticlib"]
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+[dependencies]
+rayon = { version = "1.10", optional = true }
+subtle = { version = "2.6.1", default-features = false }
+digest = { version = "0.11", features = ["mac"], optional = true }
+generic-array = { version = "1.0", optional = true }
+crypto-common = { version = "0.2", optional = true }
+
+[features]
+default = ["std", "digest-trait", "multithread"]
+std = []
+multithread = ["dep:rayon", "std"]
+digest-trait = ["dep:digest", "dep:generic-array", "dep:crypto-common"]
+
+# =============================================================================
+# DEVELOPMENT DEPENDENCIES
+# =============================================================================
+
+[dev-dependencies]
+hex = "0.4"
+rand = "0.10"
+# Testing & Serialization
+bolero = "0.13"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+blake3 = { version = "1.8", features = ["rayon"] }
+sha2 = "0.10"
+gxhash = "3.2"
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+# =============================================================================
+# LINT CONFIGURATION
+# =============================================================================
+
+[lints]
+workspace = true

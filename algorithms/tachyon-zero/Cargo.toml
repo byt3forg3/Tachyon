@@ -1,0 +1,33 @@
+
+# =============================================================================
+# PACKAGE METADATA
+# =============================================================================
+
+[package]
+name = "tachyon-zero"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+authors = ["byt3forg3 <260008633+byt3forg3@users.noreply.github.com>"]
+description = "Tachyon Zero: Performance AVX-512 hash function prioritizing speed over collision resistance."
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/byt3forg3/tachyon"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+[dependencies]
+cfg-if = "1.0"
+static_assertions = "1.1"
+
+[features]
+default = ["std"]
+std = []
+
+# =============================================================================
+# LINT CONFIGURATION
+# =============================================================================
+
+[lints]
+workspace = true

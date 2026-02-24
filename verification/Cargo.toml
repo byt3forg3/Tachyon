@@ -1,0 +1,36 @@
+
+# =============================================================================
+# PACKAGE METADATA
+# =============================================================================
+
+[package]
+name = "tachyon-verification"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.89"
+authors = ["byt3forg3 <260008633+byt3forg3@users.noreply.github.com>"]
+repository = "https://github.com/byt3forg3/tachyon"
+license = "MIT OR Apache-2.0"
+publish = false
+
+# =============================================================================
+# LIBRARIES & BINARIES
+# =============================================================================
+
+[[bin]]
+name = "tachyon_stream"
+path = "tachyon_stream.rs"
+
+# [[bin]]
+# name = "avalanche"
+# path = "src/bin/avalanche.rs"  # TODO: create this file
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+[dependencies]
+tachyon = { path = "../algorithms/tachyon" }
+tachyon-zero = { path = "../algorithms/tachyon-zero" }
+clap = { version = "4.5", features = ["derive"] }
+anyhow = "1.0"
