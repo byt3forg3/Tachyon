@@ -20,15 +20,16 @@ echo "   Tachyon Unified Testing Suite Setup           "
 echo "=================================================="
 
 # =============================================================================
-# SMHASHER — VARIANT A: Pure C Reference (for SMHasher upstream PR)
+# SMHASHER — VARIANT A: Pure C Reference (byt3forg3 fork, Tachyon pre-integrated)
 # =============================================================================
-# Copies sources from algorithms/tachyon/c-reference/ into smhasher/tachyon/
+# Clones byt3forg3/smhasher which already has Tachyon in Hashes.h + CMakeLists.
+# Copies the latest C sources from algorithms/tachyon/c-reference/ to keep in sync.
 
 function setup_smhasher_c() {
     echo ""
-    echo "--- [ Setting up SMHasher (Pure C / PR-ready) ] ---"
+    echo "--- [ Setting up SMHasher (Pure C / byt3forg3 fork) ] ---"
 
-    # Dependency check for C variant
+    # Dependency check
     for cmd in cmake git g++ make; do
         if ! command -v $cmd &> /dev/null; then
             echo "❌ Error: $cmd is not installed."
@@ -37,78 +38,28 @@ function setup_smhasher_c() {
     done
 
     if [ ! -d "$SMHASHER_DIR" ]; then
-        echo " Cloning SMHasher (rurban fork)..."
-        git clone --depth 1 "$SMHASHER_REPO" "$SMHASHER_DIR"
+        echo " Cloning byt3forg3/smhasher fork..."
+        git clone --depth 1 "https://github.com/byt3forg3/smhasher.git" "$SMHASHER_DIR"
     fi
 
     cd "$SMHASHER_DIR"
     git submodule update --init --recursive
 
     # -------------------------------------------------------------------------
-    # Copy C-Reference sources into smhasher/tachyon/
+    # Sync latest C sources into smhasher/tachyon/ from our repo
+    # (fork already has the integration in Hashes.h, main.cpp, CMakeLists.txt)
     # -------------------------------------------------------------------------
     CREF="$(cd "$TACHYON_ROOT/algorithms/tachyon/c-reference" && pwd)"
     TACHYON_DEST="tachyon"
 
-    echo " Copying Tachyon C sources into ${TACHYON_DEST}/..."
+    echo " Syncing Tachyon C sources into ${TACHYON_DEST}/..."
     mkdir -p "$TACHYON_DEST"
     for f in tachyon.h tachyon_impl.h tachyon_dispatcher.c \
               tachyon_portable.c tachyon_aesni.c tachyon_avx512.c README.md; do
         cp "$CREF/$f" "$TACHYON_DEST/$f"
     done
-    echo "   ✅ Sources copied to smhasher/${TACHYON_DEST}/"
-
-    # Glue wrapper at root level (like other hash .cpp files in SMHasher)
-    cp "$TACHYON_ROOT/verification/smhasher_kit/Tachyon_glue.cpp" "./Tachyon.cpp"
-
-    # -------------------------------------------------------------------------
-    # Patch CMakeLists.txt
-    # -------------------------------------------------------------------------
-    if ! grep -q "TACHYON_SRC" CMakeLists.txt; then
-        echo " - Patching CMakeLists.txt..."
-
-        CMAKE_INJECTION='
-# --- Tachyon Integration Start ---
-# Pure C implementation — no Rust/cargo required.
-# Runtime dispatcher selects AVX-512, AES-NI, or portable via CPUID.
-set(TACHYON_SRC
-    tachyon/tachyon_dispatcher.c
-    tachyon/tachyon_portable.c
-    tachyon/tachyon_aesni.c
-    tachyon/tachyon_avx512.c
-)
-set_source_files_properties(tachyon/tachyon_avx512.c
-    PROPERTIES COMPILE_FLAGS "-mavx512f -mavx512bw -mvaes -mvpclmulqdq -maes -msse4.1 -mpclmul")
-set_source_files_properties(tachyon/tachyon_aesni.c
-    PROPERTIES COMPILE_FLAGS "-maes -msse4.1 -mpclmul")
-# --- Tachyon Integration End ---
-'
-        awk -v blk="$CMAKE_INJECTION" \
-            '/^set\(BLAKE3_SRC/ { print blk } { print }' \
-            CMakeLists.txt > CMakeLists.txt.tmp && mv CMakeLists.txt.tmp CMakeLists.txt
-
-        # Add TACHYON_SRC into the SMHasherSupport library (only in the add_library block)
-        sed -i '/add_library(SMHasherSupport/,/)/{s|${BLAKE3_SRC}|${BLAKE3_SRC}\n  ${TACHYON_SRC}|}' CMakeLists.txt
-
-        # Add Tachyon.cpp to the SMHasher executable
-        sed -i 's/add_executable(SMHasher main\.cpp/add_executable(SMHasher main.cpp Tachyon.cpp/' CMakeLists.txt
-
-        # Make tachyon/ headers findable from Tachyon.cpp
-        sed -i '/add_executable(SMHasher/a target_include_directories(SMHasher PRIVATE tachyon)' CMakeLists.txt
-    else
-        echo " - CMakeLists.txt already patched, skipping."
-    fi
-
-    # -------------------------------------------------------------------------
-    # Patch main.cpp
-    # -------------------------------------------------------------------------
-    if ! grep -q "Tachyon_Hash" main.cpp; then
-        echo " - Patching main.cpp..."
-        sed -i '/#include "Platform.h"/a #include "tachyon/tachyon.h"\nvoid Tachyon_Hash(const void * key, int len, uint32_t seed, void * out);' main.cpp
-        sed -i '/blake3c_test,/a\  { Tachyon_Hash, 256, 0xE9BBF229, "Tachyon", "Tachyon 256-bit C", GOOD, {} },' main.cpp
-    else
-        echo " - main.cpp already patched, skipping."
-    fi
+    echo "   ✅ Sources synced to smhasher/${TACHYON_DEST}/"
+    echo "   ℹ️  Integration already in Hashes.h + CMakeLists.txt (no patching needed)"
 
     # -------------------------------------------------------------------------
     # Build
@@ -121,6 +72,7 @@ set_source_files_properties(tachyon/tachyon_aesni.c
     echo "✅ SMHasher set up successfully with Tachyon (Pure C)."
     RAN_SMHASHER=1
 }
+
 
 # =============================================================================
 # SMHASHER — VARIANT B: Rust / libtachyon (full optimized Rust build)
