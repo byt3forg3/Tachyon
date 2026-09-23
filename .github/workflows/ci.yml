@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [ "main", "master" ]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -15,8 +22,9 @@ jobs:
   # ============================================================================
   workspace-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Rust Toolchain
         uses: dtolnay/rust-toolchain@1.98.1
@@ -32,13 +40,13 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Run Clippy
-        run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
 
       - name: Build Workspace
-        run: cargo build --verbose --workspace
+        run: cargo build --verbose --workspace --locked
 
-      - name: Run Tests (Workspace)
-        run: cargo test --workspace --verbose
+      - name: Run Release Tests (Workspace)
+        run: cargo test --release --workspace --lib --bins --tests --all-features --locked
         env:
           RUST_BACKTRACE: 1
 
@@ -54,12 +62,42 @@ jobs:
         run: cargo deny check
 
   # ============================================================================
+  # COMPATIBILITY — declared MSRV and pure no_std build
+  # ============================================================================
+  msrv-check:
+    name: "MSRV (Rust 1.89)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Rust 1.89 Toolchain
+        uses: dtolnay/rust-toolchain@1.89.0
+
+      - name: Check Tachyon with all features
+        run: cargo check -p tachyon --all-features --locked
+
+  no-std-check:
+    name: "no_std"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Rust Toolchain
+        uses: dtolnay/rust-toolchain@1.98.1
+
+      - name: Check Tachyon without default features
+        run: cargo rustc -p tachyon --no-default-features --lib --crate-type rlib --locked
+
+  # ============================================================================
   # C REFERENCE — AddressSanitizer build, portable backend, smoke test
   # ============================================================================
   c-reference-check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install ASan-capable GCC
         run: sudo apt-get update && sudo apt-get install -y gcc
@@ -76,7 +114,8 @@ jobs:
 
       - name: Smoke-test under ASan and UBSan
         run: |
-          OUTPUT=$(./asan_test "hello world")
+          EXPECTED="Tachyon Hash: 3138c10ba15fe7d7fad8c7fc380474a0be7737a4e6296d246304ed767903e85b"
+          OUTPUT=$(./asan_test "abc")
           echo "Output: $OUTPUT"
-          echo "$OUTPUT" | grep -qE '^Tachyon Hash: [0-9a-f]{64}$'
+          test "$OUTPUT" = "$EXPECTED"
           echo "✓ ASan smoke test passed"

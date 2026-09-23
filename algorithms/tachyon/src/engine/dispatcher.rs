@@ -40,30 +40,53 @@ pub fn get_best_kernel() -> KernelFn {
     }
 
     // ── 2. Compile-time dispatch (no_std) ────────────────────────────────────
-    #[cfg(not(feature = "std"))]
+    #[cfg(all(
+        not(feature = "std"),
+        target_feature = "avx512f",
+        target_feature = "avx512bw",
+        target_feature = "vaes"
+    ))]
     {
-        #[cfg(all(
+        safe_hybrid_wrapper
+    }
+
+    #[cfg(all(
+        not(feature = "std"),
+        not(all(
             target_feature = "avx512f",
             target_feature = "avx512bw",
             target_feature = "vaes"
-        ))]
-        return safe_hybrid_wrapper;
-
-        #[cfg(all(
-            not(all(
-                target_feature = "avx512f",
-                target_feature = "avx512bw",
-                target_feature = "vaes"
-            )),
-            target_feature = "aes",
-            target_feature = "sse2",
-            target_feature = "pclmulqdq"
-        ))]
-        return safe_aesni_wrapper;
+        )),
+        target_feature = "aes",
+        target_feature = "sse2",
+        target_feature = "pclmulqdq"
+    ))]
+    {
+        safe_aesni_wrapper
     }
 
     // ── 3. Portable fallback ─────────────────────────────────────────────────
-    kernels::portable::oneshot
+    #[cfg(feature = "std")]
+    {
+        kernels::portable::oneshot
+    }
+
+    #[cfg(all(
+        not(feature = "std"),
+        not(all(
+            target_feature = "avx512f",
+            target_feature = "avx512bw",
+            target_feature = "vaes"
+        )),
+        not(all(
+            target_feature = "aes",
+            target_feature = "sse2",
+            target_feature = "pclmulqdq"
+        ))
+    ))]
+    {
+        kernels::portable::oneshot
+    }
 }
 
 /// Returns the AVX-512 kernel if the CPU supports it.
