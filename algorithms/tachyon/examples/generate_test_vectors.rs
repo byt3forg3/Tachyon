@@ -2,15 +2,13 @@
 //!
 //! Generates the canonical JSON test vectors used by `tests/test_vectors.json`.
 //! Includes Empty, Small, Large, and specific boundary conditions.
-#![allow(clippy::unwrap_used)]
+#![allow(clippy::unwrap_used, clippy::print_stdout)]
 use serde_json::json;
 
 fn main() {
     let mut vectors = Vec::new();
 
-    // =========================================================================
-    // 1. BASIC VECTORS
-    // =========================================================================
+    // ── 1. Basic vectors ─────────────────────────────────────────────────────
 
     // Validates standard ASCII input
     let input_basic = b"abc";
@@ -28,9 +26,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(input_empty))
     }));
 
-    // =========================================================================
-    // 2. BOUNDARY CONDITIONS
-    // =========================================================================
+    // ── 2. Boundary conditions ───────────────────────────────────────────────
 
     // Large Input (1KB) - Triggers bulk processing
     let input_large = vec![0x41u8; 1024];
@@ -40,7 +36,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(&input_large))
     }));
 
-    // 3. Medium Input (256 bytes) - Used by C/Java binding tests
+    // Medium input (256 bytes), used by C/Java binding tests
     let input_medium = vec![0x41u8; 256];
     vectors.push(json!({
         "name": "medium_256",
@@ -48,7 +44,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(&input_medium))
     }));
 
-    // 4. Small ("Tachyon")
+    // Small input ("Tachyon")
     let input_small = b"Tachyon";
     vectors.push(json!({
         "name": "small",
@@ -56,7 +52,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(input_small))
     }));
 
-    // 5. Exact Block 64 (64 x 0x00)
+    // Exact 64-byte block (64 x 0x00)
     let input_exact_64 = vec![0x00u8; 64];
     vectors.push(json!({
         "name": "exact_block_64",
@@ -64,7 +60,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(&input_exact_64))
     }));
 
-    // 6. Exact Block 512 (512 x 0x01)
+    // Exact 512-byte block (512 x 0x01)
     let input_exact_512 = vec![0x01u8; 512];
     vectors.push(json!({
         "name": "exact_block_512",
@@ -72,7 +68,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(&input_exact_512))
     }));
 
-    // 7. Unaligned 63 (63 x 0x02)
+    // Unaligned 63-byte input (63 x 0x02)
     let input_unaligned_63 = vec![0x02u8; 63];
     vectors.push(json!({
         "name": "unaligned_63",
@@ -80,9 +76,7 @@ fn main() {
         "hash": hex::encode(tachyon::hash(&input_unaligned_63))
     }));
 
-    // =========================================================================
-    // 3. EXTREME INPUTS
-    // =========================================================================
+    // ── 3. Extreme inputs ────────────────────────────────────────────────────
 
     // Very Large (1MB) - Stresses buffer management and parallelism
     let input_huge = vec![0x41u8; 1024 * 1024];

@@ -12,9 +12,21 @@
 #include <wmmintrin.h>
 #include <emmintrin.h>
 #include <smmintrin.h>
+
 // =============================================================================
 // AES-NI KERNEL
 // =============================================================================
+//
+// OPERATION MAPPING (ZMM → four XMMs, acc[i*4..i*4+3])
+//
+// | AVX-512                           | AES-NI                                    |
+// |-----------------------------------|-------------------------------------------|
+// | _mm512_xor_si512(a, b)            | _mm_xor_si128(a[i], b[i])            × 4  |
+// | _mm512_aesenc_epi128(a, k)        | _mm_aesenc_si128(a[i], k[i])         × 4  |
+// | _mm512_add_epi64(a, b)            | _mm_add_epi64(a[i], b[i])            × 4  |
+// | _mm512_loadu_si512(ptr)           | _mm_loadu_si128(ptr + i*16)          × 4  |
+// | _mm512_set1_epi64(x)              | _mm_set1_epi64x(x)                   × 4  |
+// | _mm512_alignr_epi64(a, a, 2)      | rotate [a0,a1,a2,a3] → [a1,a2,a3,a0]      |
 
 #if defined(__GNUC__) || defined(__clang__)
   #define TARGET_AESNI __attribute__((target("aes,sse4.1,pclmul")))
@@ -588,4 +600,4 @@ void tachyon_aesni_oneshot(const uint8_t *input, size_t len, uint64_t domain, ui
     tachyon_aesni_finalize(&state, input + chunk_len, len - chunk_len, len, domain, key, out);
 }
 
-#endif // x86_64 or i386
+#endif

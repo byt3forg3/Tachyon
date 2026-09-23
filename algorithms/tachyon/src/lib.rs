@@ -20,11 +20,10 @@
 //! // 3. Streaming (Big Data / Files)
 //! use tachyon::Hasher;
 //!
-//! let mut hasher = Hasher::new()?;
+//! let mut hasher = Hasher::new();
 //! hasher.update(b"Chunk 1");
 //! hasher.update(b"Chunk 2");
 //! let hash = hasher.finalize();
-//! # Ok::<(), tachyon::CpuFeatureError>(())
 //! ```
 
 // =============================================================================
@@ -34,11 +33,13 @@
 #[cfg(not(feature = "std"))]
 extern crate alloc;
 
+#[path = "engine/-engine.rs"]
 mod engine;
 #[cfg(feature = "std")]
 mod ffi;
 // Re-export internal kernels for benchmarking/testing if needed, but hide from docs
 #[doc(hidden)]
+#[path = "kernels/-kernels.rs"]
 pub mod kernels; // Public for test/example use only
 mod oneshot;
 mod streaming;

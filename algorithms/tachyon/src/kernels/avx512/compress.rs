@@ -88,7 +88,7 @@ impl Avx512State {
         let mut acc6 = self.acc[6];
         let mut acc7 = self.acc[7];
 
-        for block in input.chunks_exact(BLOCK_SIZE) {
+        for block in input.as_chunks::<BLOCK_SIZE>().0 {
             let ptr = block.as_ptr();
             let blk = _mm512_set1_epi64(block_idx as i64);
 
@@ -112,7 +112,7 @@ impl Avx512State {
             let s6 = acc6;
             let s7 = acc7;
 
-            // 1. First Half Rounds: Direct Mapping (d_i -> acc_i)
+            // ── 1. First-half rounds: direct mapping (d_i -> acc_i) ──────────
             for &rk in rk_base.iter().take(mid) {
                 acc0 = _mm512_aesenc_epi128(
                     acc0,
@@ -168,7 +168,7 @@ impl Avx512State {
                 acc7 = tmp;
             }
 
-            // 2. Intermediate Lane Mix (Intra-register)
+            // ── 2. Intermediate lane mix ─────────────────────────────────────
             acc0 = _mm512_alignr_epi64(acc0, acc0, 2);
             acc1 = _mm512_alignr_epi64(acc1, acc1, 2);
             acc2 = _mm512_alignr_epi64(acc2, acc2, 2);
@@ -178,7 +178,7 @@ impl Avx512State {
             acc6 = _mm512_alignr_epi64(acc6, acc6, 2);
             acc7 = _mm512_alignr_epi64(acc7, acc7, 2);
 
-            // 3. Cross-Accumulator Diffusion Stage 1 (Pairs 0-4, 1-5...)
+            // ── 3. Cross-accumulator diffusion: stage 1 ──────────────────────
             // XOR lower, ADD upper (Asymmetric)
             let lo_save0 = acc0;
             let lo_save1 = acc1;
@@ -193,7 +193,7 @@ impl Avx512State {
             acc6 = _mm512_add_epi64(acc6, lo_save2);
             acc7 = _mm512_add_epi64(acc7, lo_save3);
 
-            // 4. Cross-Accumulator Diffusion Stage 2 (Pairs 0-2, 1-3...)
+            // ── 4. Cross-accumulator diffusion: stage 2 ──────────────────────
             // Ensures full diameter-3 diffusion
             let bf0 = acc0;
             let bf1 = acc1;
@@ -208,7 +208,7 @@ impl Avx512State {
             acc5 = _mm512_xor_si512(acc5, acc7);
             acc7 = _mm512_add_epi64(acc7, bf5);
 
-            // 5. Second Half Rounds: Data Rotation (d_{i+4} -> acc_i)
+            // ── 5. Second-half rounds: data rotation (d_{i+4} -> acc_i) ──────
             for &rk in rk_base.iter().skip(mid) {
                 acc0 = _mm512_aesenc_epi128(
                     acc0,
@@ -264,7 +264,7 @@ impl Avx512State {
                 acc7 = tmp;
             }
 
-            // 6. Final Lane Mix
+            // ── 6. Final lane mix ────────────────────────────────────────────
             acc0 = _mm512_alignr_epi64(acc0, acc0, 2);
             acc1 = _mm512_alignr_epi64(acc1, acc1, 2);
             acc2 = _mm512_alignr_epi64(acc2, acc2, 2);
@@ -274,7 +274,7 @@ impl Avx512State {
             acc6 = _mm512_alignr_epi64(acc6, acc6, 2);
             acc7 = _mm512_alignr_epi64(acc7, acc7, 2);
 
-            // 7. Davies-Meyer Feed-Forward
+            // ── 7. Davies-Meyer feed-forward ─────────────────────────────────
             acc0 = _mm512_xor_si512(acc0, s0);
             acc1 = _mm512_xor_si512(acc1, s1);
             acc2 = _mm512_xor_si512(acc2, s2);

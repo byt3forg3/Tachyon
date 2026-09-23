@@ -5,6 +5,7 @@
 
 #![allow(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::print_stdout)]
 #![allow(unsafe_code)]
 
 // =============================================================================
@@ -71,11 +72,11 @@ fn test_streaming() {
         let part2 = b"Chunk1";
         let part3 = b"Chunk2";
 
-        // 1. One-Shot Baseline
+        // ── 1. One-shot baseline ─────────────────────────────────────────────
         let expected = tachyon::hash(input);
 
-        // 2. Streaming w/ Chunks
-        let mut hasher = Hasher::new().expect("CPU feature check failed");
+        // ── 2. Streaming with chunks ─────────────────────────────────────────
+        let mut hasher = Hasher::new();
         hasher.update(part1);
         hasher.update(part2);
         hasher.update(part3);
@@ -112,7 +113,7 @@ fn test_streaming_edge_cases() {
         use tachyon::Hasher;
 
         // --- Edge Case 1: Empty Input ---
-        let hasher_empty = Hasher::new().expect("CPU feature check failed");
+        let hasher_empty = Hasher::new();
         let hash_empty = hasher_empty.finalize();
         let expected_empty = tachyon::hash(b"");
         assert_eq!(
@@ -122,7 +123,7 @@ fn test_streaming_edge_cases() {
 
         // --- Edge Case 2: Exact 512-Byte Boundary ---
         let data_512 = vec![0x42u8; 512];
-        let mut hasher_512 = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_512 = Hasher::new();
         hasher_512.update(&data_512);
         let hash_512 = hasher_512.finalize();
         let expected_512 = tachyon::hash(&data_512);
@@ -136,7 +137,7 @@ fn test_streaming_edge_cases() {
         let part2_2 = vec![0xBBu8; 2];
         let combined = [part1_511.as_slice(), part2_2.as_slice()].concat();
 
-        let mut hasher_overflow = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_overflow = Hasher::new();
         hasher_overflow.update(&part1_511);
         hasher_overflow.update(&part2_2);
         let hash_overflow = hasher_overflow.finalize();
@@ -147,7 +148,7 @@ fn test_streaming_edge_cases() {
         );
 
         // --- Edge Case 4: Multiple Small Updates ---
-        let mut hasher_small = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_small = Hasher::new();
         for i in 0..100 {
             hasher_small.update(&[i as u8]);
         }
@@ -161,7 +162,7 @@ fn test_streaming_edge_cases() {
 
         // --- Edge Case 5: Large Input (>512 bytes) ---
         let data_large = vec![0x33u8; 2048];
-        let mut hasher_large = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_large = Hasher::new();
         hasher_large.update(&data_large[..1000]);
         hasher_large.update(&data_large[1000..]);
         let hash_large = hasher_large.finalize();
@@ -186,7 +187,7 @@ fn test_streaming_parallel() {
 
         // Test 1: Small input (below CHUNK_SIZE) - matches oneshot
         let small_data = b"Small test data for parallel hasher";
-        let mut hasher_small = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_small = Hasher::new();
         hasher_small.update(small_data);
         let hash_small = hasher_small.finalize();
         let expected_small = tachyon::hash(small_data);
@@ -197,8 +198,8 @@ fn test_streaming_parallel() {
 
         // Test 2: Multiple updates produce consistent result
         let chunk_size = 64 * 1024;
-        let mut hasher1 = Hasher::new().expect("CPU feature check failed");
-        let mut hasher2 = Hasher::new().expect("CPU feature check failed");
+        let mut hasher1 = Hasher::new();
+        let mut hasher2 = Hasher::new();
 
         for i in 0..5 {
             let chunk = vec![i as u8; chunk_size];
@@ -214,10 +215,10 @@ fn test_streaming_parallel() {
 
         // Test 3: Single update vs multiple updates with same total data
         let total_data = vec![0x42u8; 128 * 1024];
-        let mut hasher_single = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_single = Hasher::new();
         hasher_single.update(&total_data);
 
-        let mut hasher_multi = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_multi = Hasher::new();
         for chunk in total_data.chunks(32 * 1024) {
             hasher_multi.update(chunk);
         }
@@ -229,7 +230,7 @@ fn test_streaming_parallel() {
         );
 
         // Test 4: Empty input
-        let hasher_empty = Hasher::new().expect("CPU feature check failed");
+        let hasher_empty = Hasher::new();
         let hash_empty = hasher_empty.finalize();
         let expected_empty = tachyon::hash(b"");
         assert_eq!(
@@ -239,7 +240,7 @@ fn test_streaming_parallel() {
 
         // Test 5: Large input - streaming must match oneshot
         let large_data = vec![0xAB_u8; 512 * 1024]; // 512 KB
-        let mut hasher_large = Hasher::new().expect("CPU feature check failed");
+        let mut hasher_large = Hasher::new();
         hasher_large.update(&large_data);
         let hash_large = hasher_large.finalize();
         let expected_large = tachyon::hash(&large_data);

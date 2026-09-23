@@ -32,7 +32,7 @@ fn test_streaming_consistency() {
         let input = vec![0u8; size];
         let h_oneshot = hash(&input);
 
-        let mut hasher = Hasher::new().unwrap();
+        let mut hasher = Hasher::new();
         hasher.update(&input);
         let h_streaming = hasher.finalize();
 

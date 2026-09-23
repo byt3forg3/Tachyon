@@ -4,6 +4,7 @@
 //! (AVX-512, AES-NI, Portable) across boundary spaces.
 
 #![allow(clippy::expect_used)]
+#![allow(clippy::print_stdout)]
 use std::io::Write;
 use std::process::Command;
 
@@ -236,7 +237,7 @@ fn verify_streaming_consistency(size: usize, backends: &Backends) {
 
     // Standard streaming
     let rust_std = {
-        let mut h = tachyon::Hasher::new().expect("Hasher instantiation failed");
+        let mut h = tachyon::Hasher::new();
         h.update(&data);
         h.finalize()
     };
@@ -253,7 +254,7 @@ fn verify_streaming_consistency(size: usize, backends: &Backends) {
     // Seeded streaming
     let seed: u64 = 0xDEAD_BEEF;
     let rust_seeded = {
-        let mut h = tachyon::Hasher::new_full(0, seed).expect("Hasher instantiation failed");
+        let mut h = tachyon::Hasher::new_with_domain_seeded(0, seed);
         h.update(&data);
         h.finalize()
     };
@@ -276,7 +277,7 @@ fn verify_streaming_consistency(size: usize, backends: &Backends) {
         *k = (i + 1) as u8;
     }
     let rust_keyed = {
-        let mut h = tachyon::Hasher::new().expect("Hasher instantiation failed");
+        let mut h = tachyon::Hasher::new();
         h.set_key(&key);
         h.update(&data);
         h.finalize()
@@ -296,7 +297,7 @@ fn verify_streaming_consistency(size: usize, backends: &Backends) {
     // Domain streaming
     let domain: u64 = tachyon::TachyonDomain::FileChecksum.to_u64();
     let rust_domain = {
-        let mut h = tachyon::Hasher::new_with_domain(domain).expect("Hasher instantiation failed");
+        let mut h = tachyon::Hasher::new_with_domain(domain);
         h.update(&data);
         h.finalize()
     };

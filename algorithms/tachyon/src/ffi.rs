@@ -325,34 +325,31 @@ pub unsafe extern "C" fn tachyon_derive_key(
 /// Opaque hasher handle for C.
 pub struct TachyonHasherPtr(crate::streaming::TachyonHasher);
 
-/// Create new hasher. Returns NULL if CPU unsupported.
+/// Create new hasher.
 /// Caller must free with `tachyon_hasher_free`.
 #[no_mangle]
 pub unsafe extern "C" fn tachyon_hasher_new() -> *mut TachyonHasherPtr {
-    let Ok(hasher) = crate::streaming::TachyonHasher::new() else {
-        return std::ptr::null_mut();
-    };
-    Box::into_raw(Box::new(TachyonHasherPtr(hasher)))
+    Box::into_raw(Box::new(TachyonHasherPtr(
+        crate::streaming::TachyonHasher::new(),
+    )))
 }
 
-/// Create new hasher with domain separation. Returns NULL if CPU unsupported.
+/// Create new hasher with domain separation.
 /// Caller must free with `tachyon_hasher_free`.
 #[no_mangle]
 pub unsafe extern "C" fn tachyon_hasher_new_with_domain(domain: u64) -> *mut TachyonHasherPtr {
-    let Ok(hasher) = crate::streaming::TachyonHasher::new_with_domain(domain) else {
-        return std::ptr::null_mut();
-    };
-    Box::into_raw(Box::new(TachyonHasherPtr(hasher)))
+    Box::into_raw(Box::new(TachyonHasherPtr(
+        crate::streaming::TachyonHasher::new_with_domain(domain),
+    )))
 }
 
-/// Create new hasher with seed. Returns NULL if CPU unsupported.
+/// Create new hasher with seed.
 /// Caller must free with `tachyon_hasher_free`.
 #[no_mangle]
 pub unsafe extern "C" fn tachyon_hasher_new_seeded(seed: u64) -> *mut TachyonHasherPtr {
-    let Ok(hasher) = crate::streaming::TachyonHasher::new_full(0, seed) else {
-        return std::ptr::null_mut();
-    };
-    Box::into_raw(Box::new(TachyonHasherPtr(hasher)))
+    Box::into_raw(Box::new(TachyonHasherPtr(
+        crate::streaming::TachyonHasher::new_with_domain_seeded(0, seed),
+    )))
 }
 
 /// Feed data into the hasher.

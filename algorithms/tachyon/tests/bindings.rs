@@ -5,6 +5,7 @@
 
 #![allow(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::print_stdout, clippy::print_stderr)]
 
 use std::fs::OpenOptions;
 use std::io::Write;

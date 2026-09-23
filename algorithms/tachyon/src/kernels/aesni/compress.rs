@@ -19,6 +19,19 @@ use core::arch::x86_64::{
 };
 
 // =============================================================================
+// OPERATION MAPPING (ZMM → four XMMs, acc[i*4..i*4+4])
+// =============================================================================
+//
+// | AVX-512                           | AES-NI                                    |
+// |-----------------------------------|-------------------------------------------|
+// | _mm512_xor_si512(a, b)            | _mm_xor_si128(a[i], b[i])            × 4  |
+// | _mm512_aesenc_epi128(a, k)        | _mm_aesenc_si128(a[i], k[i])         × 4  |
+// | _mm512_add_epi64(a, b)            | _mm_add_epi64(a[i], b[i])            × 4  |
+// | _mm512_loadu_si512(ptr)           | _mm_loadu_si128(ptr + i*16)          × 4  |
+// | _mm512_set1_epi64(x)              | _mm_set1_epi64x(x)                   × 4  |
+// | _mm512_alignr_epi64(a, a, 2)      | rotate [a0,a1,a2,a3] → [a1,a2,a3,a0]      |
+
+// =============================================================================
 // INTERNAL HELPERS
 // =============================================================================
 
@@ -56,10 +69,14 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         ]
     });
 
-    // 1. First Half Rounds: Direct Mapping (d_i -> acc_i)
+    // ── 1. First-half rounds: direct mapping (d_i -> acc_i) ──────────────────
     for &rk in rk_base.iter().take(mid) {
-        for ((acc_chunk, d_chunk), lo_chunk) in
-            acc.chunks_exact_mut(4).zip(&d).zip(lo_all.chunks_exact(4))
+        for ((acc_chunk, d_chunk), lo_chunk) in acc
+            .as_chunks_mut::<4>()
+            .0
+            .iter_mut()
+            .zip(&d)
+            .zip(lo_all.as_chunks::<4>().0)
         {
             acc_chunk[0] = _mm_aesenc_si128(
                 acc_chunk[0],
@@ -108,7 +125,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         }
     }
 
-    // 2. Intermediate Mix: Intra-register Rotation
+    // ── 2. Intermediate mix: intra-register rotation ─────────────────────────
     // Simulates _mm512_alignr_epi64(_, _, 2)
     let old_m = *acc;
     for i in 0..8 {
@@ -118,7 +135,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         acc[i * 4 + 3] = old_m[i * 4];
     }
 
-    // 3. Cross-Accumulator Diffusion Stage 1 (Pairs 0-4, 1-5...)
+    // ── 3. Cross-accumulator diffusion: stage 1 ──────────────────────────────
     // XOR lower, ADD upper (Asymmetric)
     for lane in 0..4 {
         for i in 0..4 {
@@ -129,7 +146,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         }
     }
 
-    // 4. Cross-Accumulator Diffusion Stage 2 (Pairs 0-2, 1-3...)
+    // ── 4. Cross-accumulator diffusion: stage 2 ──────────────────────────────
     // Ensures full diameter-3 diffusion
     for lane in 0..4 {
         let a0 = acc[0 * 4 + lane];
@@ -153,11 +170,13 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         acc[7 * 4 + lane] = _mm_add_epi64(a7, a5);
     }
 
-    // 5. Second Half Rounds: Data Rotation (d_{i+4} -> acc_i)
+    // ── 5. Second-half rounds: data rotation (d_{i+4} -> acc_i) ──────────────
     for &rk in rk_base.iter().take(ROUNDS).skip(mid) {
         for (i, (acc_chunk, lo_chunk)) in acc
-            .chunks_exact_mut(4)
-            .zip(lo_all.chunks_exact(4))
+            .as_chunks_mut::<4>()
+            .0
+            .iter_mut()
+            .zip(lo_all.as_chunks::<4>().0)
             .enumerate()
         {
             let data_idx = (i + 4) % 8;
@@ -207,7 +226,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         }
     }
 
-    // 6. Final Mix: Intra-register Rotation
+    // ── 6. Final mix: intra-register rotation ────────────────────────────────
     let old_f = *acc;
     for i in 0..8 {
         acc[i * 4] = old_f[i * 4 + 1];
@@ -216,7 +235,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
         acc[i * 4 + 3] = old_f[i * 4];
     }
 
-    // 7. Davies-Meyer Feed-Forward
+    // ── 7. Davies-Meyer feed-forward ─────────────────────────────────────────
     for i in 0..32 {
         acc[i] = _mm_xor_si128(acc[i], saves[i]);
     }
@@ -230,7 +249,7 @@ unsafe fn compress_block(acc: &mut [__m128i; 32], ptr: *const u8, block_idx: u64
 impl AesNiState {
     /// Process 1024-byte chunks to match AVX-512 8-accumulator model.
     // SAFETY: Requires AES/SSE2 CPU features (enforced by dispatcher).
-    // Calls `compress_block` with pointers from validated slice chunks via `chunks_exact`.
+    // Calls `compress_block` with pointers from validated fixed-size slice chunks.
     #[target_feature(enable = "aes")]
     #[target_feature(enable = "sse2")]
     #[allow(unsafe_code)]
@@ -239,8 +258,8 @@ impl AesNiState {
         let mut block_idx = self.block_count;
 
         // Process 2 blocks (1024 bytes) per iteration
-        let mut chunks = input.chunks_exact(1024);
-        for big_chunk in chunks.by_ref() {
+        let (chunks, remainder) = input.as_chunks::<1024>();
+        for big_chunk in chunks {
             let ptr = big_chunk.as_ptr();
             compress_block(&mut acc, ptr, block_idx);
             block_idx += 1;
@@ -249,7 +268,7 @@ impl AesNiState {
         }
 
         // Handle remainder FULL blocks (512B each)
-        for chunk in chunks.remainder().chunks_exact(BLOCK_SIZE) {
+        for chunk in remainder.as_chunks::<BLOCK_SIZE>().0 {
             compress_block(&mut acc, chunk.as_ptr(), block_idx);
             block_idx += 1;
         }

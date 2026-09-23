@@ -4,6 +4,7 @@
 
 #![allow(clippy::expect_used)]
 #![allow(clippy::unwrap_used)]
+#![allow(clippy::print_stdout)]
 
 use serde::Deserialize;
 use std::fs::File;

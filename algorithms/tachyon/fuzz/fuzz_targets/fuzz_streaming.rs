@@ -1,21 +1,18 @@
 #![no_main]
 
 use libfuzzer_sys::fuzz_target;
-use tachyon::{hash_with_domain, Hasher, TachyonDomain};
+use tachyon::Hasher;
 
 fuzz_target!(|data: &[u8]| {
     if data.is_empty() {
         return;
     }
-    // Determine chunk size from first byte (1 to 255)
-    let chunk_size = (data[0] as usize % 255) + 1;
-
     // Calculate one-shot hash as reference (uses Generic domain 0)
     let reference_hash = tachyon::hash(data);
 
     // Calculate streaming hash by splitting into arbitrary small chunks
     // 0 is the TachyonDomain::Generic ID
-    let mut hasher = Hasher::new_full(0, 0).unwrap();
+    let mut hasher = Hasher::new_with_domain_seeded(0, 0);
 
     // Chunk size is derived from second byte (1 to 255)
     let chunk_size = if data.len() > 1 {

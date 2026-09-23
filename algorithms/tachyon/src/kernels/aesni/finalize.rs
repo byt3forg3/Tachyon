@@ -47,11 +47,11 @@ impl AesNiState {
 
         let wk = _mm_set_epi64x(WHITENING1 as i64, WHITENING0 as i64);
 
-        // 1. CONSTANT-TIME REMAINDER PROCESSING
+        // ── 1. Constant-time remainder processing ────────────────────────────
         // Process 64-byte chunks. Input length is public, so access pattern is safe.
-        let mut chunks = remainder.chunks_exact(REMAINDER_CHUNK_SIZE);
+        let (chunks, rem) = remainder.as_chunks::<REMAINDER_CHUNK_SIZE>();
         for i in 0..8 {
-            if let Some(c) = chunks.next() {
+            if let Some(c) = chunks.get(i) {
                 let ptr = c.as_ptr();
                 let mut d0 = _mm_aesenc_si128(_mm_loadu_si128(ptr.cast()), wk);
                 let mut d1 = _mm_aesenc_si128(_mm_loadu_si128(ptr.add(VEC_SIZE).cast()), wk);
@@ -103,8 +103,7 @@ impl AesNiState {
             }
         }
 
-        // 2. FINAL PADDING BLOCK
-        let rem = chunks.remainder();
+        // ── 2. Final padding block ───────────────────────────────────────────
         let mut block = [0u8; REMAINDER_CHUNK_SIZE];
         if !rem.is_empty() {
             core::ptr::copy_nonoverlapping(rem.as_ptr(), block.as_mut_ptr(), rem.len());
@@ -115,7 +114,7 @@ impl AesNiState {
         let mut d2 = _mm_aesenc_si128(_mm_loadu_si128(block.as_ptr().add(VEC_SIZE * 2).cast()), wk);
         let mut d3 = _mm_aesenc_si128(_mm_loadu_si128(block.as_ptr().add(VEC_SIZE * 3).cast()), wk);
 
-        // 3. TREE MERGE (32 -> 16 -> 8 -> 4)
+        // ── 3. Tree merge (32 -> 16 -> 8 -> 4) ───────────────────────────────
         // Non-linear reduction using independent constants
         let merge_rk0 = _mm_set1_epi64x(C5 as i64); // ln(11)
         let merge_rk1 = _mm_set1_epi64x(C6 as i64); // ln(13)
@@ -142,7 +141,7 @@ impl AesNiState {
             // self-mix
         }
 
-        // 4. QUADRATIC CLMUL HARDENING
+        // ── 4. Quadratic CLMUL hardening ─────────────────────────────────────
         // Round 1: polynomial mixing in GF(2)[x]
         // Use different polynomials for low/high halves to avoid algebraic dependencies.
         let clmul_k = _mm_set_epi64x(CLMUL_CONSTANT2 as i64, CLMUL_CONSTANT as i64);
@@ -161,7 +160,7 @@ impl AesNiState {
 
         let saves_final = [acc[0], acc[1], acc[2], acc[3]];
 
-        // 5. FINAL BLOCK PROCESSING (Length/Domain Injection)
+        // ── 5. Final block processing: length/domain injection ───────────────
         // Matches AVX-512 lane decomposition:
         // Lane 0 = (e0, e1), Lane 1 = (e2, e3), Lane 2 = (e4, e5), Lane 3 = (e6, e7)
         let meta0 = _mm_set_epi64x(
@@ -322,6 +321,8 @@ pub unsafe fn oneshot(
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::print_stderr)]
+
     use super::*;
     use crate::kernels::constants::{C5, KEY_SCHEDULE_BASE, KEY_SCHEDULE_MULT};
 

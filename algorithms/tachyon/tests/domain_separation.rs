@@ -68,7 +68,7 @@ fn test_hash_equals_generic_domain() {
 fn test_streaming_matches_oneshot() {
     let data = b"Hello, Tachyon!";
 
-    let mut hasher = Hasher::new().unwrap();
+    let mut hasher = Hasher::new();
     hasher.update(b"Hello, ");
     hasher.update(b"Tachyon!");
     let stream_hash = hasher.finalize();
@@ -90,7 +90,7 @@ fn test_streaming_with_domain() {
         TachyonDomain::DatabaseIndex,
         TachyonDomain::ContentAddressed,
     ] {
-        let mut hasher = Hasher::new_with_domain(domain.to_u64()).unwrap();
+        let mut hasher = Hasher::new_with_domain(domain.to_u64());
         hasher.update(data);
         let stream_result = hasher.finalize();
 
@@ -109,7 +109,7 @@ fn test_streaming_with_domain() {
 fn test_streaming_incremental_with_domain() {
     let data = b"Incremental streaming test";
 
-    let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64()).unwrap();
+    let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64());
     for &byte in data {
         hasher.update(&[byte]);
     }
@@ -146,7 +146,7 @@ fn test_domain_separation_large_input() {
 fn test_streaming_large_with_domain() {
     let large = vec![0xAAu8; 200_000]; // 200 KB - arbitrary large size
 
-    let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64()).unwrap();
+    let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64());
     // Update in arbitrary chunk size (not aligned to implementation)
     for chunk in large.chunks(17_000) {
         hasher.update(chunk);
@@ -285,7 +285,7 @@ fn test_streaming_misaligned_updates() {
     let chunk_sizes = [1, 7, 127, 1_001, 8_191, 16_383];
 
     for &chunk_size in &chunk_sizes {
-        let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64()).unwrap();
+        let mut hasher = Hasher::new_with_domain(TachyonDomain::FileChecksum.to_u64());
 
         for chunk in data.chunks(chunk_size) {
             hasher.update(chunk);

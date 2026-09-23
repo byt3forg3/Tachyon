@@ -229,29 +229,17 @@ impl Hasher {
             if d > 5 {
                 return Err(napi::Error::from_reason("Domain must be 0-5"));
             }
-            // Use new_full if seed is present or just to be safe (0 seed is default)
-            let inner = tachyon::Hasher::new_full(d as u64, s)
-                .map_err(|e| napi::Error::from_reason(format!("Failed to create hasher: {}", e)))?;
+            // Use new_with_domain_seeded if seed is present or just to be safe (0 seed is default)
+            let inner = tachyon::Hasher::new_with_domain_seeded(d as u64, s);
             Ok(Self {
                 inner: Mutex::new(Some(inner)),
             })
         } else {
             // No domain provided.
-            if s != 0 {
-                let inner = tachyon::Hasher::new_full(0, s).map_err(|e| {
-                    napi::Error::from_reason(format!("Failed to create hasher: {}", e))
-                })?;
-                Ok(Self {
-                    inner: Mutex::new(Some(inner)),
-                })
-            } else {
-                let inner = tachyon::Hasher::new().map_err(|e| {
-                    napi::Error::from_reason(format!("Failed to create hasher: {}", e))
-                })?;
-                Ok(Self {
-                    inner: Mutex::new(Some(inner)),
-                })
-            }
+            let inner = tachyon::Hasher::new_with_domain_seeded(0, s);
+            Ok(Self {
+                inner: Mutex::new(Some(inner)),
+            })
         }
     }
 

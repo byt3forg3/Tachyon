@@ -75,7 +75,7 @@ impl Avx512State {
             init_reg(C7),
         ];
 
-        // 1. Non-linear Seed Mixing
+        // ── 1. Non-linear seed mixing ────────────────────────────────────────
         // seed=0 uses C5 to avoid timing leaks
         let s_vec = if seed != 0 {
             _mm512_set1_epi64(seed as i64)
@@ -86,7 +86,7 @@ impl Avx512State {
             *a = _mm512_aesenc_epi128(*a, s_vec);
         }
 
-        // 2. Key Absorption (2 Rounds)
+        // ── 2. Key absorption (2 rounds) ─────────────────────────────────────
         if let Some(k) = key {
             let mut key_block = [0u8; 64];
             key_block[0..32].copy_from_slice(k);

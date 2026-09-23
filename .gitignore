@@ -132,21 +132,3 @@ lcov.info
 # Temporary files
 *.tmp
 *.bak
-
-# =============================================================================
-# RAG 
-# =============================================================================
-
-.tachyon-rag/.venv/
-.tachyon-rag/venv/
-.tachyon-rag/ENV/
-.tachyon-rag/env/
-
-.tachyon-rag/lancedb_data/
-
-.tachyon-rag/__pycache__/
-.tachyon-rag/*.pyc
-.tachyon-rag/*.pyo
-.tachyon-rag/*.pyd
-
-.tachyon-rag/mcp_config.json

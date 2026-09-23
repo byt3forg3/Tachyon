@@ -71,6 +71,7 @@ unsafe fn finalize_short_precomputed(
     total_length: u64,
     domain_id: u64,
 ) -> [u8; crate::kernels::constants::HASH_SIZE] {
+    // ── 1. Load precomputed state ────────────────────────────────────────────
     use crate::kernels::constants::{C5, C6};
     // Load precomputed round keys
     let rk_chain: [__m128i; ROUNDS] =
@@ -86,7 +87,7 @@ unsafe fn finalize_short_precomputed(
         _mm_set_epi64x(SHORT_INIT[3].1 as i64, SHORT_INIT[3].0 as i64),
     ];
 
-    // 2. Prepare Final Padding Block (all input fits in one block)
+    // ── 2. Prepare final padding block ───────────────────────────────────────
     let mut block = [0u8; REMAINDER_CHUNK_SIZE];
     if !input.is_empty() {
         core::ptr::copy_nonoverlapping(input.as_ptr(), block.as_mut_ptr(), input.len());
@@ -97,10 +98,10 @@ unsafe fn finalize_short_precomputed(
     let mut d2 = _mm_aesenc_si128(_mm_loadu_si128(block.as_ptr().add(VEC_SIZE * 2).cast()), wk);
     let mut d3 = _mm_aesenc_si128(_mm_loadu_si128(block.as_ptr().add(VEC_SIZE * 3).cast()), wk);
 
-    // 3. Tree Merge + CLMUL: skipped — precomputed state already encodes the post-merge result
+    // ── 3. Reuse precomputed tree merge and CLMUL result ─────────────────────
     let saves_final = [acc[0], acc[1], acc[2], acc[3]]; // saved for Davies-Meyer feed-forward
 
-    // 4. Final Block Processing - Positional domain/length injection
+    // ── 4. Process final block with domain/length injection ──────────────────
     let meta0 = _mm_set_epi64x(
         CHAOS_BASE as i64,                 // e1
         (domain_id ^ total_length) as i64, // e0
@@ -141,7 +142,7 @@ unsafe fn finalize_short_precomputed(
 
         // State-Feedback every 2 rounds: stride-1 cross-infect on odd rounds
         if r % 2 == 1 {
-            let (t0, t1, t2, t3) = (acc[0], acc[1], acc[2], acc[3]);
+            let (t0, t1, t2, t3) = acc.into();
             d0 = _mm_xor_si128(d0, t1);
             d1 = _mm_xor_si128(d1, t2);
             d2 = _mm_xor_si128(d2, t3);
@@ -160,6 +161,7 @@ unsafe fn finalize_short_precomputed(
         acc[i] = _mm_xor_si128(acc[i], saves_final[i]);
     }
 
+    // ── 5. Final lane reduction ──────────────────────────────────────────────
     // Round 1: Self-mix for non-linear amplification
     let a0 = _mm_aesenc_si128(acc[0], acc[0]);
     let a1 = _mm_aesenc_si128(acc[1], acc[1]);

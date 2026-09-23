@@ -70,11 +70,11 @@ impl Avx512State {
             WHITENING0 as i64,
         );
 
-        // 1. CONSTANT-TIME REMAINDER PROCESSING
+        // ── 1. Constant-time remainder processing ────────────────────────────
         // Process each remainder block. Input length is public.
-        let mut chunks = remainder.chunks_exact(REMAINDER_CHUNK_SIZE);
+        let (chunks, rem) = remainder.as_chunks::<REMAINDER_CHUNK_SIZE>();
 
-        for (i, c) in chunks.by_ref().take(8).enumerate() {
+        for (i, c) in chunks.iter().take(8).enumerate() {
             let mut d = _mm512_aesenc_epi128(_mm512_loadu_si512(c.as_ptr().cast()), wk);
             let base = i * 4;
             let lo = _mm512_set_epi64(
@@ -101,8 +101,7 @@ impl Avx512State {
             acc[i] = _mm512_xor_si512(acc[i], save);
         }
 
-        // 2. FINAL PADDING BLOCK
-        let rem = chunks.remainder();
+        // ── 2. Final padding block ───────────────────────────────────────────
         let mut block = [0u8; REMAINDER_CHUNK_SIZE];
         if !rem.is_empty() {
             core::ptr::copy_nonoverlapping(rem.as_ptr(), block.as_mut_ptr(), rem.len());
@@ -110,7 +109,7 @@ impl Avx512State {
         block[rem.len()] = 0x80;
         let mut d0 = _mm512_aesenc_epi128(_mm512_loadu_si512(block.as_ptr().cast()), wk);
 
-        // 3. TREE MERGE (8 -> 4 -> 2 -> 1)
+        // ── 3. Tree merge (8 -> 4 -> 2 -> 1) ─────────────────────────────────
         // Non-linear reduction using independent constants.
         let merge_rk0 = _mm512_set1_epi64(C5 as i64); // ln(11)
         let merge_rk1 = _mm512_set1_epi64(C6 as i64); // ln(13)
@@ -130,7 +129,7 @@ impl Avx512State {
         acc[0] = _mm512_aesenc_epi128(acc[0], _mm512_xor_si512(acc[1], merge_rk2));
         acc[0] = _mm512_aesenc_epi128(acc[0], _mm512_xor_si512(acc[0], merge_rk2)); // self-mix
 
-        // 4. QUADRATIC CLMUL HARDENING
+        // ── 4. Quadratic CLMUL hardening ─────────────────────────────────────
         // Round 1: polynomial mixing in GF(2)[x]
         // Use different polynomials for low/high halves to avoid algebraic dependencies.
         let clmul_k = _mm512_set_epi64(
@@ -156,7 +155,7 @@ impl Avx512State {
 
         let save0 = acc[0];
 
-        // 5. FINAL BLOCK PROCESSING (Length/Domain Injection)
+        // ── 5. Final block processing: length/domain injection ───────────────
         let meta_vec = _mm512_set_epi64(
             CHAOS_BASE as i64,
             domain_id as i64,
@@ -182,7 +181,7 @@ impl Avx512State {
 
         acc[0] = _mm512_xor_si512(acc[0], save0);
 
-        // 6. MULTI-ROUND KEY ABSORPTION
+        // ── 6. Multi-round key absorption ────────────────────────────────────
         // 4 distinct permutations ensure full key diffusion.
         if let Some(k) = key {
             let mut key_block = [0u8; REMAINDER_CHUNK_SIZE];
@@ -215,7 +214,7 @@ impl Avx512State {
             acc[0] = _mm512_aesenc_epi128(acc[0], k_r4);
         }
 
-        // 7. FINAL LANE REDUCTION (512-bit -> 256-bit)
+        // ── 7. Final lane reduction (512-bit -> 256-bit) ─────────────────────
         // Pure AESENC cross-lane mixing for guaranteed full diffusion.
 
         // Round 1: Self-mix

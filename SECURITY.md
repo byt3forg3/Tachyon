@@ -13,18 +13,12 @@ Tachyon Hash Family is explicitly designed as an **experimental** high-throughpu
 
 > **Note:** For a detailed breakdown of Tachyon Core's design, threat model, and statistical verification (SMHasher, PractRand, etc.), please read the [Algorithm Security Documentation](algorithms/tachyon/SECURITY.md).
 
-### Tachyon Zero (In Development)
-
-| Version | Supported          |
-| ------- | ------------------ |
-| N/A     | ❌                 |
-
 ## Reporting Issues
 
 If you discover a hash quality problem or collision:
 
 - Open a GitHub issue with reproduction steps
-- For sensitive concerns: `260008633+byt3forg3@users.noreply.github.com`
+- For sensitive concerns: `dev@byt3forg3.com`
 
 ## Disclaimer
 

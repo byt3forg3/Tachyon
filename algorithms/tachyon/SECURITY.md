@@ -76,7 +76,7 @@ For an in-depth look at Tachyon's cryptographically hardened design—including 
 > [!IMPORTANT]
 > These features provide defense-in-depth for non-cryptographic use cases but are **NOT substitutes for audited cryptographic primitives**.
 
-### Domain Separation (`hash_with_domain`)
+### [Domain Separation (`hash_with_domain`)](src/oneshot.rs#L85)
 
 Tachyon appends the input length and a **Domain Byte** to every padding block. This prevents length-extension attacks and ensures that inputs in different contexts yield distinct outputs.
 
@@ -96,7 +96,7 @@ Tachyon appends the input length and a **Domain Byte** to every padding block. T
 **Why Domain Separation Matters:**
 Without domain separation, `Hash("data")` used as a file checksum could collide with `Hash("data")` used as a database key. Domain bytes cryptographically bind the hash output to its intended use case.
 
-### Message Authentication Code (`hash_keyed`)
+### [Message Authentication Code (`hash_keyed`)](src/oneshot.rs#L118)
 
 > [!CAUTION]
 > **Experimental and unaudited.** Do NOT use for production security.
@@ -115,9 +115,9 @@ Tachyon supports keyed hashing by absorbing a 256-bit (32-byte) secret key prior
 **Use Case:**
 Non-critical authentication in trusted environments where audited alternatives (HMAC-SHA256, BLAKE3-keyed) are unavailable.
 
-### Constant-Time Verification (`verify`, `verify_mac`)
+### [Constant-Time Verification (`verify`, `verify_mac`)](src/oneshot.rs#L62)
 
-The Rust API provides `tachyon::verify(msg, expected_hash)` and `tachyon::verify_mac(msg, key, expected_hash)`. Both use constant-time comparisons (`subtle::ConstantTimeEq`) to mitigate timing side-channel attacks during hash validation.
+The Rust API provides `tachyon::verify(msg, expected_hash)` and `tachyon::verify_mac(msg, key, expected_hash)`. Both use constant-time comparisons ([`subtle::ConstantTimeEq`](Cargo.toml#L36) via [`.ct_eq()`](src/oneshot.rs#L64)) to mitigate timing side-channel attacks during hash validation.
 
 **What is Constant-Time:**
 - Hash verification (comparing outputs)
@@ -148,7 +148,7 @@ The Rust API provides `tachyon::verify(msg, expected_hash)` and `tachyon::verify
 If you discover a hash quality problem or collision:
 
 - Open a GitHub issue with reproduction steps
-- For sensitive concerns: `260008633+byt3forg3@users.noreply.github.com`
+- For sensitive concerns: `dev@byt3forg3.com`
 
 ## Disclaimer
 

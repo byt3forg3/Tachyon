@@ -29,7 +29,7 @@ cargo bench bench_bpc
 
 ## Getting Started
 
-Tachyon uses a **Dual-Path Routing** to select the best kernel for the job:
+Tachyon uses a **[Dual-Path Routing](src/engine/dispatcher.rs#L112)** to select the best kernel for the job:
 
 1.  **Short Path:** utilized for inputs < 64 bytes. Low startup overhead, 4 × 128-bit AES-NI registers.
 2.  **Bulk Path:** utilized for inputs >= 64 bytes. Massive 8 × 512-bit AVX-512 registers for peak throughput.
@@ -126,7 +126,7 @@ tachyon = { git = "https://github.com/byt3forg3/tachyon", default-features = fal
 
 ### Library Usage
 
-**Simple Hashing**
+**[Simple Hashing](src/oneshot.rs#L24)**
 ```rust
 use tachyon;
 
@@ -137,25 +137,24 @@ fn main() {
 }
 ```
 
-**Streaming API (for large files)**
+**[Streaming API (for large files)](src/streaming.rs#L30)**
 ```rust
 use tachyon::Hasher;
 
-fn main() -> Result<(), tachyon::CpuFeatureError> {
-    let mut hasher = Hasher::new()?;
-    
+fn main() {
+    let mut hasher = Hasher::new();
+
     // Process data in chunks
     hasher.update(b"chunk 1");
     hasher.update(b"chunk 2");
     hasher.update(b"chunk 3");
-    
+
     let hash = hasher.finalize();
     println!("Hash: {:x?}", hash);
-    Ok(())
 }
 ```
 
-**Domain Separation (prevent cross-context attacks)**
+**[Domain Separation (prevent cross-context attacks)](src/oneshot.rs#L85)**
 ```rust
 use tachyon::{hash_with_domain, TachyonDomain};
 
@@ -168,7 +167,7 @@ assert_ne!(file_hash, db_hash);
 let custom = hash_with_domain(b"data", tachyon::custom_domain(42));
 ```
 
-**Hash Verification (Constant Time)**
+**[Hash Verification (Constant Time)](src/oneshot.rs#L62)**
 
 The `verify()` function uses constant-time comparison to prevent timing side-channels:
 

@@ -1,6 +1,9 @@
 //! Portable software implementation of AES and CLMUL primitives.
 
-// AES S-Box
+// =============================================================================
+// AES S-BOX
+// =============================================================================
+
 #[rustfmt::skip]
 const SBOX: [u8; 256] = [
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -20,6 +23,10 @@ const SBOX: [u8; 256] = [
     0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
 ];
+
+// =============================================================================
+// PORTABLE VECTOR TYPE
+// =============================================================================
 
 #[derive(Clone, Copy, Debug)]
 #[repr(C, align(16))]
@@ -74,6 +81,10 @@ impl U128 {
     }
 }
 
+// =============================================================================
+// AES ROUND PRIMITIVES
+// =============================================================================
+
 /// GF(2^8) multiplication by 2 (used in `MixColumns`).
 /// Branchless: `b >> 7` extracts the MSB as 0 or 1; multiplying by `GF_POLY`
 /// produces the conditional reduction polynomial without a data-dependent branch.
@@ -82,7 +93,7 @@ const fn gf_double(b: u8) -> u8 {
 }
 
 /// AES `MixColumns` on a single 4-byte column.
-fn mix_column(c: &mut [u8]) {
+const fn mix_column(c: &mut [u8]) {
     let t = [c[0], c[1], c[2], c[3]];
     c[0] = gf_double(t[0] ^ t[1]) ^ t[1] ^ t[2] ^ t[3];
     c[1] = gf_double(t[1] ^ t[2]) ^ t[2] ^ t[3] ^ t[0];
@@ -93,12 +104,12 @@ fn mix_column(c: &mut [u8]) {
 pub fn aesenc(state: U128, key: U128) -> U128 {
     let mut s = state.b;
 
-    // SubBytes
+    // ── 1. SubBytes ──────────────────────────────────────────────────────────
     for b in &mut s {
         *b = SBOX[*b as usize];
     }
 
-    // ShiftRows
+    // ── 2. ShiftRows ─────────────────────────────────────────────────────────
     // Row 0: No shift
     // Row 1: Shift left 1
     let tmp = s[1];
@@ -120,19 +131,23 @@ pub fn aesenc(state: U128, key: U128) -> U128 {
     s[7] = s[3];
     s[3] = tmp;
 
-    // MixColumns
+    // ── 3. MixColumns ────────────────────────────────────────────────────────
     mix_column(&mut s[0..4]);
     mix_column(&mut s[4..8]);
     mix_column(&mut s[8..12]);
     mix_column(&mut s[12..16]);
 
-    // AddRoundKey
+    // ── 4. AddRoundKey ───────────────────────────────────────────────────────
     let mut res = U128::zero();
     for (i, res_i) in res.b.iter_mut().enumerate() {
         *res_i = s[i] ^ key.b[i];
     }
     res
 }
+
+// =============================================================================
+// MIXING PRIMITIVES
+// =============================================================================
 
 pub fn ternary_xor(a: U128, b: U128, c: U128) -> U128 {
     a.xor(&b).xor(&c)
@@ -181,6 +196,8 @@ pub fn clmulepi64(a: U128, b: U128, imm: i32) -> U128 {
 
 #[cfg(test)]
 mod tests {
+    #![allow(clippy::print_stdout)]
+
     use super::*;
 
     #[test]

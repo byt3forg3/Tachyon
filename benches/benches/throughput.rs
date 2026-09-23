@@ -108,7 +108,7 @@ fn bench_medium_files(c: &mut Criterion) {
 // BENCHMARK 4: LARGE FILES
 // =============================================================================
 
-/// Throughput for large files (ISOs, Videos). Includes 1GB RAM saturation test.
+/// Throughput for large files (ISOs, Videos). Includes a 1 GB RAM saturation test.
 fn bench_large_files(c: &mut Criterion) {
     let mut group = c.benchmark_group("4-Large-Files");
     group.sample_size(20); // Minimal samples for heavy I/O simulation
@@ -163,7 +163,7 @@ fn bench_streaming(c: &mut Criterion) {
             &(input, chunk_size),
             |b, (data, chunk_sz)| {
                 b.iter(|| {
-                    let mut hasher = tachyon::Hasher::new().unwrap();
+                    let mut hasher = tachyon::Hasher::new();
                     for chunk in data.chunks(*chunk_sz) {
                         hasher.update(black_box(chunk));
                     }
@@ -179,7 +179,7 @@ fn bench_streaming(c: &mut Criterion) {
 // BENCHMARK 6: THREAD SCALING
 // =============================================================================
 
-/// Multi-core scaling efficiency using Rayon (1 to N threads).
+/// Multicore scaling efficiency using Rayon (1 to N threads).
 #[cfg(feature = "multithread")]
 fn bench_thread_scaling(c: &mut Criterion) {
     let mut group = c.benchmark_group("6-Thread-Scaling");

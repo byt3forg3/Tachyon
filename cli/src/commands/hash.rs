@@ -3,55 +3,16 @@
 //! File hashing with automatic parallelization via Rayon.
 
 use anyhow::{Context, Result};
-use clap::ValueEnum;
 use rayon::prelude::*;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum, Debug)]
-pub enum Algorithm {
-    /// Standard Tachyon (Cryptographically hardened, 256-bit)
-    Tachyon,
-    /// Tachyon Zero (Extreme Performance, 256-bit)
-    Zero,
-}
-
-enum HasherWrapper {
-    Tachyon(tachyon::Hasher),
-    Zero(Box<tachyon_zero::Hasher>),
-}
-
-impl HasherWrapper {
-    fn new(algo: Algorithm) -> Result<Self> {
-        match algo {
-            Algorithm::Tachyon => {
-                let h = tachyon::Hasher::new().map_err(|e| anyhow::anyhow!("{}", e))?;
-                Ok(Self::Tachyon(h))
-            }
-            Algorithm::Zero => {
-                let h = tachyon_zero::Hasher::new();
-                Ok(Self::Zero(Box::new(h)))
-            }
-        }
-    }
-
-    fn update(&mut self, data: &[u8]) {
-        match self {
-            Self::Tachyon(h) => h.update(data),
-            Self::Zero(h) => h.update(data),
-        }
-    }
-
-    fn finalize(self) -> Vec<u8> {
-        match self {
-            Self::Tachyon(h) => h.finalize().to_vec(),
-            Self::Zero(h) => h.finalize().to_vec(),
-        }
-    }
-}
+// =============================================================================
+// HASHING
+// =============================================================================
 
 /// Hash files (Rayon parallelizes automatically when beneficial).
-pub fn hash_files(files: &[PathBuf], algo: Algorithm) -> Result<()> {
+pub fn hash_files(files: &[PathBuf]) -> Result<()> {
     let results = Mutex::new(Vec::with_capacity(files.len()));
     let errors = Mutex::new(Vec::new());
 
@@ -60,7 +21,7 @@ pub fn hash_files(files: &[PathBuf], algo: Algorithm) -> Result<()> {
             let mut file = std::fs::File::open(file_path)
                 .with_context(|| format!("Failed to open: {}", file_path.display()))?;
 
-            let mut hasher = HasherWrapper::new(algo)?;
+            let mut hasher = tachyon::Hasher::new();
             let mut buffer = [0u8; 128 * 1024]; // 128 KB buffer
 
             loop {

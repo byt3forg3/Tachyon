@@ -221,10 +221,7 @@ pub unsafe extern "system" fn Java_com_tachyon_Tachyon_nativeHasherNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    match tachyon::Hasher::new() {
-        Ok(hasher) => Box::into_raw(Box::new(hasher)) as jlong,
-        Err(_) => 0,
-    }
+    Box::into_raw(Box::new(tachyon::Hasher::new())) as jlong
 }
 
 /// Create new streaming hasher with domain separation.
@@ -248,10 +245,9 @@ pub unsafe extern "system" fn Java_com_tachyon_Tachyon_nativeHasherNewWithDomain
         _ => tachyon::TachyonDomain::Generic,
     };
 
-    match tachyon::Hasher::new_with_domain(tachyon_domain.to_u64()) {
-        Ok(hasher) => Box::into_raw(Box::new(hasher)) as jlong,
-        Err(_) => 0,
-    }
+    Box::into_raw(Box::new(tachyon::Hasher::new_with_domain(
+        tachyon_domain.to_u64(),
+    ))) as jlong
 }
 
 /// Create new streaming hasher with seed.
@@ -265,10 +261,10 @@ pub unsafe extern "system" fn Java_com_tachyon_Tachyon_nativeHasherNewSeeded(
     _class: JClass,
     seed: jlong,
 ) -> jlong {
-    match tachyon::Hasher::new_full(0, seed as u64) {
-        Ok(hasher) => Box::into_raw(Box::new(hasher)) as jlong,
-        Err(_) => 0,
-    }
+    Box::into_raw(Box::new(tachyon::Hasher::new_with_domain_seeded(
+        0,
+        seed as u64,
+    ))) as jlong
 }
 
 /// Update hasher with data.

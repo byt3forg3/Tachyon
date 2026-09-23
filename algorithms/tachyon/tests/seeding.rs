@@ -25,15 +25,15 @@ fn test_seed_zero_vs_default() {
 }
 
 #[test]
-fn test_streaming_seeding() -> Result<(), tachyon::CpuFeatureError> {
+fn test_streaming_seeding() {
     use tachyon::Hasher;
 
     let data = b"Streaming Seed Test";
-    let mut hasher1 = Hasher::new_full(0, 1)?;
+    let mut hasher1 = Hasher::new_with_domain_seeded(0, 1);
     hasher1.update(data);
     let h1 = hasher1.finalize();
 
-    let mut hasher2 = Hasher::new_full(0, 2)?;
+    let mut hasher2 = Hasher::new_with_domain_seeded(0, 2);
     hasher2.update(data);
     let h2 = hasher2.finalize();
 
@@ -41,5 +41,4 @@ fn test_streaming_seeding() -> Result<(), tachyon::CpuFeatureError> {
         h1, h2,
         "Different seeds in streaming mode must produce different outputs"
     );
-    Ok(())
 }

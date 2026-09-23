@@ -41,14 +41,7 @@ pub fn check_mode(checksum_file: &PathBuf) -> Result<()> {
 
         match std::fs::File::open(file_path) {
             Ok(mut file) => {
-                let mut hasher = match tachyon::Hasher::new() {
-                    Ok(h) => h,
-                    Err(e) => {
-                        println!("{}: FAILED (CPU Error: {})", file_path, e);
-                        failed += 1;
-                        continue;
-                    }
-                };
+                let mut hasher = tachyon::Hasher::new();
 
                 let mut buffer = [0u8; 128 * 1024];
                 let mut error = None;

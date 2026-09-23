@@ -94,7 +94,7 @@ impl AesNiState {
             init_xmm(C7, 6),
         ];
 
-        // 1. Non-linear Seed Mixing
+        // ── 1. Non-linear seed mixing ────────────────────────────────────────
         // seed=0 uses C5 to avoid timing leaks if we skipped mixing
         let seed_vec = if seed != 0 {
             _mm_set1_epi64x(seed as i64)
@@ -105,7 +105,7 @@ impl AesNiState {
             *a = _mm_aesenc_si128(*a, seed_vec);
         }
 
-        // 2. Key Absorption (2 Rounds)
+        // ── 2. Key absorption (2 rounds) ─────────────────────────────────────
         if let Some(k) = key {
             let mut key_block = [0u8; 64];
             key_block[0..32].copy_from_slice(k);

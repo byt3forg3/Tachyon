@@ -487,4 +487,4 @@ void tachyon_avx512_oneshot(const uint8_t *input, size_t len, uint64_t domain, u
     tachyon_avx512_finalize(&state, input + chunk_len, len - chunk_len, len, domain, key, out);
 }
 
-#endif // x86_64 or i386
+#endif

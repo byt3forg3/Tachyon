@@ -2,11 +2,12 @@
 //!
 //! High-performance hash command-line tool.
 
+#[path = "commands/-commands.rs"]
 mod commands;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
-use commands::{check_mode, hash_files, Algorithm};
+use commands::{check_mode, hash_files};
 use std::path::PathBuf;
 
 // =============================================================================
@@ -24,10 +25,6 @@ struct Cli {
     /// Files to hash (if no subcommand)
     #[arg(value_name = "FILE")]
     files: Vec<PathBuf>,
-
-    /// Hashing algorithm to use
-    #[arg(short, long, value_enum, default_value_t = Algorithm::Tachyon)]
-    algo: Algorithm,
 }
 
 #[derive(Subcommand)]
@@ -55,7 +52,7 @@ fn main() -> Result<()> {
                 std::process::exit(1);
             }
 
-            hash_files(&cli.files, cli.algo)?;
+            hash_files(&cli.files)?;
         }
     }
 

@@ -2,7 +2,7 @@
  * @file Tachyon_glue.cpp
  * @brief SMHasher integration wrapper for the Tachyon hash function.
  *
- * Copyright (c) byt3forg3 — 260008633+byt3forg3@users.noreply.github.com
+ * Copyright (c) byt3forg3 — dev@byt3forg3.com
  * Licensed under the MIT or Apache 2.0 License.
  *
  * Adapts Tachyon's C API to SMHasher's expected function signature.

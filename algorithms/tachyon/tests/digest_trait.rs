@@ -24,21 +24,21 @@ fn hash_keyed_generic<D: Digest + KeyInit>(key: &[u8], input: &[u8]) -> Vec<u8> 
 
 #[test]
 fn test_digest_trait_usage() {
-    // 1. Standard Usage (Direct)
-    let mut hasher = Hasher::new().expect("Hardware support required for test");
+    // ── 1. Standard usage (direct) ───────────────────────────────────────────
+    let mut hasher = Hasher::new();
     hasher.update(b"test");
     let res1 = hasher.finalize();
 
-    // 2. Generic Usage (via Trait)
+    // ── 2. Generic usage (via trait) ─────────────────────────────────────────
     let res2 = hash_generic::<Hasher>(b"test");
     assert_eq!(res1, res2.as_slice());
 
-    // 3. Keyed Usage (via KeyInit Trait)
+    // ── 3. Keyed usage (via KeyInit trait) ───────────────────────────────────
     let key = [0x42u8; 32];
     let res_keyed = hash_keyed_generic::<Hasher>(&key, b"test");
 
     // Compare with native keyed API
-    let mut native_keyed = Hasher::new().expect("Hardware support required for test");
+    let mut native_keyed = Hasher::new();
     native_keyed.set_key(&key);
     native_keyed.update(b"test");
     let res_native = native_keyed.finalize();

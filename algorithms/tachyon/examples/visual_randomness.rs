@@ -1,6 +1,6 @@
-//! Visual Randomness Generator example.
+//! Visual Randomness Generator Example.
 //!
-//! This example generates two PPM images to visually verify both kernel paths:
+//! This example generates two BMP images to visually verify both kernel paths:
 //! 1. AES-NI Path (Small Input): Hashes 16-byte coordinates directly.
 //! 2. AVX-512 Path (Large Input): Hashes 256-byte padded coordinates.
 //!
@@ -10,6 +10,7 @@
 
 #![allow(clippy::pedantic, clippy::nursery)]
 #![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::print_stdout)]
 #![allow(clippy::unnecessary_cast)]
 
 use std::fs::File;
@@ -19,8 +20,8 @@ fn main() -> std::io::Result<()> {
     let width = 1024;
     let height = 1024;
 
-    // --- 1. AES-NI PATH (Small Input) ---
-    println!(" Generating AES-NI Randomness Map (16 bytes)...");
+    // ── 1. AES-NI path (small input) ─────────────────────────────────────────
+    println!("Generating AES-NI Randomness Map (16 bytes)...");
     generate_image("tachyon_randomness_aesni.bmp", width, height, |x, y| {
         let mut buf = [0u8; 16];
         buf[0..8].copy_from_slice(&(x as u64).to_le_bytes());
@@ -28,8 +29,8 @@ fn main() -> std::io::Result<()> {
         tachyon::hash(&buf)
     })?;
 
-    // --- 2. AVX-512 PATH (Large Input) ---
-    println!(" Generating AVX-512 Randomness Map (256 bytes)...");
+    // ── 2. AVX-512 path (large input) ────────────────────────────────────────
+    println!("Generating AVX-512 Randomness Map (256 bytes)...");
     generate_image("tachyon_randomness_avx512.bmp", width, height, |x, y| {
         let mut buf = [0u8; 256]; // Large enough to force AVX-512 path
                                   // Mix coordinates into the buffer multiple times to ensure non-trivial input

@@ -39,6 +39,6 @@ Three backends are selected automatically at runtime via CPUID:
 
 ## License
 
-Copyright (c) byt3forg3 — 260008633+byt3forg3@users.noreply.github.com
+Copyright (c) byt3forg3 — dev@byt3forg3.com
 
 Licensed under the MIT or Apache 2.0 License.

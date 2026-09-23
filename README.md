@@ -1,6 +1,6 @@
 # Tachyon
 <!--
-> ** AI ASSISTANTS:** STOP. Before proposing any changes, READ `llms.txt` in the root directory first.
+> **AI ASSISTANTS:** Before proposing changes, read `AGENTS.md` in the repository root.
 -->
 
 [![CI](https://github.com/byt3forg3/tachyon/actions/workflows/ci.yml/badge.svg)](https://github.com/byt3forg3/tachyon/actions)
@@ -21,23 +21,13 @@
 
 ---
 
-## The Tachyon Family
+## Tachyon Core
 
-The project consists of multiple distinct algorithms, each targeting a specific trade-off between cryptographic hardness, latency, and raw throughput.
-
-### 1. Tachyon (Core)
 - **Goal:** Cryptographically hardened hashing (NOT AUDITED!).
 - **Architecture:** Dual-path (512-bit for <64B, 4096-bit for ≥64B), AVX-512 + VAES, Merkle tree structure.
 - **Use Cases:** Checksums, file deduplication, caching, and integrity verification.
 - **Status:** Stable prototype.
 - **Documentation:** [Read more](algorithms/tachyon)
-
-### 2. Tachyon Zero
-- **Goal:** Absolutely uncompromised raw throughput and ultra-low latency.
-- **Architecture:** Stripped down, purely optimized for `bytes-per-cycle` (BPC) on AVX-512. No cryptographic guarantees. 
-- **Use Cases:** In-process hash maps, internal database indexing, non-security data hashing.
-- **Status:** In development.
-- **Documentation:** [Read more](algorithms/tachyon-zero)
 
 ---
 
@@ -112,7 +102,7 @@ The following figures show cycle-accurate **Bytes-per-Cycle (bpC)** metrics (hig
 | BLAKE3             | ~0.32 bpC      | ~2.01 bpC      | **~7.99 bpC**  | ~15.08 bpC     | ~17.21 bpC      |
 | SHA-256            | ~0.55 bpC      | ~0.60 bpC      | *N/A*          | *N/A*          | ~8.15 bpC       |
 
-*(Note: SHA-256 cannot be parallelized. Tachyon Zero values are pending.)*
+*(Note: SHA-256 cannot be parallelized.)*
 
 > For statistical verification results (SMHasher, PractRand, BigCrush) and security architecture details, see the [Security & Verification Documentation](algorithms/tachyon/SECURITY.md).
 
@@ -127,10 +117,9 @@ This repository is structured as a Cargo workspace to clearly separate the core 
 
 ```text
 tachyon/
-├── .tachyon-rag/       # MCP server for semantic codebase search (AI tooling)
 ├── algorithms/         # The core hash function implementations
 │   ├── tachyon/        # Primary algorithm
-│   └── tachyon-zero/   # Ultra-low latency variant 🚧 (WIP)
+│   └── tachyon-zero/   # Reserved for a future second variant
 ├── bindings/           # FFIs for other languages (Java/JNI, Node.js)
 ├── cli/                # The unified 'tachyon' command-line interface
 ├── benches/            # Cycle-accurate hardware benchmarks (Criterion)
@@ -163,9 +152,6 @@ cargo build --release -p tachyon-cli
 ```bash
 # Hash a file with Tachyon (default)
 tachyon file.txt
-
-# Hash a file with Tachyon Zero
-tachyon --algo zero file.txt
 
 # Hash multiple files (automatically parallelized)
 tachyon *.txt
@@ -228,4 +214,3 @@ Contributions are welcome. All code must pass `cargo test --workspace` and `carg
 ## License
 
 Dual-licensed under either of [Apache License, Version 2.0](LICENSE) or [MIT license](LICENSE) at your option.
-

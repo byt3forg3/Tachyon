@@ -37,7 +37,7 @@ pub fn hash_parallel(input: &[u8]) -> [u8; crate::kernels::constants::HASH_SIZE]
 
 /// Compute Tachyon hash with a seed.
 ///
-/// Used for `SMHasher` compatibility and randomized hashing.
+/// Used for and randomized hashing.
 #[must_use]
 #[inline]
 pub fn hash_seeded(input: &[u8], seed: u64) -> [u8; crate::kernels::constants::HASH_SIZE] {
@@ -178,8 +178,7 @@ pub fn hash_full_internal(
     // Parallel/Merkle path for large inputs (>= CHUNK_SIZE)
     if input.len() >= CHUNK_SIZE {
         use crate::Hasher;
-        #[allow(clippy::expect_used)] // Infallible API; panics if CPU features missing
-        let mut hasher = Hasher::new_full(domain_id, seed).expect("CPU features missing");
+        let mut hasher = Hasher::new_with_domain_seeded(domain_id, seed);
         if let Some(k) = key {
             hasher.set_key(&k);
         }

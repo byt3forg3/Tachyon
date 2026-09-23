@@ -4,9 +4,7 @@ use tachyon::{derive_key, hash_keyed, hash_with_domain, verify_mac, TachyonDomai
 #[test]
 fn fuzz_advanced_security() {
     check!().with_type::<Vec<u8>>().for_each(|data| {
-        // =============================================================================
-        // PREPARATION
-        // =============================================================================
+        // ── 1. Preparation ───────────────────────────────────────────────────
 
         // Split input to get specific parameters
         let mut key = [0u8; 32];
@@ -18,9 +16,7 @@ fn fuzz_advanced_security() {
         };
         let msg = &data[msg_start..];
 
-        // =============================================================================
-        // 1. KEYED HASHING (MAC)
-        // =============================================================================
+        // ── 2. Keyed hashing (MAC) ───────────────────────────────────────────
 
         let mac = hash_keyed(msg, &key);
 
@@ -39,9 +35,7 @@ fn fuzz_advanced_security() {
             "MAC verification succeeded with wrong key"
         );
 
-        // =============================================================================
-        // 2. KEY DERIVATION (KDF)
-        // =============================================================================
+        // ── 3. Key derivation (KDF) ──────────────────────────────────────────
 
         if let Ok(context_str) = std::str::from_utf8(msg) {
             let derived = derive_key(context_str, &key);
@@ -56,9 +50,7 @@ fn fuzz_advanced_security() {
             assert_ne!(derived, derived_mod, "KDF collision on different context");
         }
 
-        // =============================================================================
-        // 3. DOMAIN SEPARATION
-        // =============================================================================
+        // ── 4. Domain separation ─────────────────────────────────────────────
 
         let d1 = hash_with_domain(msg, TachyonDomain::Generic);
         let d2 = hash_with_domain(msg, TachyonDomain::FileChecksum);

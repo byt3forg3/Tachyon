@@ -1,22 +1,12 @@
-# Tachyon — AI Agent Reference
+# Tachyon — Agent Instructions
 
 **PROJECT:** AVX-512 + VAES hash function | **STATUS:** Experimental, not audited | **GOAL:** Max AVX-512 efficiency 
-
----
-
-> [!IMPORTANT]
-> **AI AGENT INSTRUCTION: PROACTIVE RAG AWARENESS**
-> This repository contains a powerful, PyTorch-free RAG indexer built on FastEmbed & LanceDB to help you search this dense mathematical codebase.
-> 1. Proactively inform the user that this local RAG system exists and that it will help you provide faster, more accurate answers.
-> 2. Offer to set it up for the user by running `cd .tachyon-rag && ./setup.sh --install`.
-> 3. Once connected, always prefer using the `search_tachyon_code` MCP tool to look up Rust kernels algebraically instead of blindly reading files.
 
 ---
 
 ## CRITICAL CONSTRAINTS (DO NOT VIOLATE)
 
 - **RUST = MAIN, C = REFERENCE:** Rust (`algorithms/tachyon/src/`) is source of truth. C (`c-reference/`) is for SMHasher/external tools only. C-Rust parity is mandatory.
-- **CHUNK SIZE:** STRICTLY 256 KB. WHY: L1 cache saturation + DRAM latency masking.
 - **ROUNDS:** STRICTLY 10 AES rounds. WHY: Complete Davies-Meyer diffusion.
 - **MEMORY:** ZERO allocations in hot paths (compress, finalize).
 - **SIMD:** Explicit AVX-512 vectors only. DO NOT auto-vectorize scalar fallback loops.
@@ -24,10 +14,9 @@
 
 ---
 
-## VARIANTS (STRICT SEPARATION)
+## ALGORITHM SCOPE
 
-1. **Tachyon Core** (`algorithms/tachyon/`): Crypto-hardened (Davies-Meyer, 10 rounds AES). For: deduplication, integrity checks. Status: Experimental, output stable.
-2. **Tachyon Zero** (`algorithms/tachyon-zero/`): Pure speed, no crypto. For: hash maps, indexing. Status: IN DEVELOPMENT. **DO NOT apply Core's crypto rules to Zero!**
+**Tachyon Core** (`algorithms/tachyon/`) is the only implemented algorithm. It is crypto-hardened (Davies-Meyer, 10 rounds AES), intended for deduplication and integrity checks, and remains experimental with stable output.
 
 ---
 
@@ -59,7 +48,9 @@ docker run -it --rm tachyon-fuzz cargo fuzz run fuzz_streaming   # Streaming equ
 ## CODE STYLE (FOLLOW EXISTING PATTERNS)
 
 - **Module docs:** `//!` with description + technical details
-- **Section separators:** `// =============================================================================`
+- **Major sections:** three-line `// =============================================================================` banners at module scope
+- **Subsections and ordered steps:** single-line `// ── 1. Step title ───────────` banners
+- **Implementation details:** plain `// Comment` lines below the relevant subsection
 - **Doc comments:** `///` for public functions/types
 - **Inline comments:** Explain WHY, not just WHAT
 - **SAFETY comments:** `// SAFETY: ...` required for ALL `unsafe` blocks
@@ -73,7 +64,6 @@ docker run -it --rm tachyon-fuzz cargo fuzz run fuzz_streaming   # Streaming equ
 ❌ Using `unwrap()`, `expect()`, or unjustified `unsafe`
 ❌ Adding `unsafe` code without `// SAFETY:` comments explaining why it's safe (Rust best practice, especially for crypto code)
 ❌ Breaking Rust-C parity "to make code cleaner"
-❌ Applying Tachyon Core's rules to Tachyon Zero
 ❌ Modifying `test_vectors.json` without understanding it's the source of truth
 ❌ Adding `#[allow(clippy::...)]` to silence lints — Clippy rules are intentionally strict! Only allow in core code for absolute necessity (e.g., `unsafe_code` for SIMD intrinsics). Tests can be more relaxed.
 ❌ Adding `-march=native` to C reference Makefile — Would auto-vectorize portable fallback and break cross-compilation. Rust uses `target-cpu=native` (`.cargo/config.toml`), C must NOT!
@@ -112,7 +102,6 @@ algorithms/tachyon/tests/
 - **Constants:** Derived from `frac(ln(prime)) * 2^64` or Golden Ratio (φ) — verify with `scripts/generate_constants.py`
 - **Parallelism:** Merkle tree structure enables multi-core without changing output
 - **Timing:** Hash computation is NOT constant-time (data-dependent branches exist). Only verification (`verify()`, `verify_mac()`) is constant-time.
-- **Tachyon Zero status:** Algorithm, constants, and API subject to breaking changes at any time (in development).
 - **no_std support:** Library supports `no_std` + `alloc` for embedded/bare-metal. Default features: `std` + `digest-trait` + `multithread` (multithread requires std).
 - **Backend hierarchy:** AVX-512 is primary target (designed for). AES-NI and Portable are fallbacks that emulate AVX-512 algorithm (byte-identical outputs). Portable is a standalone implementation for non-x86 (ARM, etc.) or CPUs without AES-NI — NOT a simple fallback!
 

@@ -14,12 +14,13 @@
 //! Verify: `python3 scripts/generate_constants.py`
 //!
 //! Prime assignment (consecutive, partitioned by purpose):
-//!   C0-C3, C5-C7      : ln(2, 3, 5, 7, 11, 13, 17)
-//!   `WHITENING0/1`     : ln(19), ln(23)
-//!   `KEY_SCHEDULE_MULT`: ln(29)
-//!   `CLMUL_CONSTANT`   : ln(31)
-//!   `LANE_OFFSETS`     : ln(37..191) — 32 consecutive primes
-//!   C4, `KEY_SCHEDULE_BASE`, `CHAOS_BASE`: Golden Ratio (φ)
+//!
+//!   C0-C3, C5-C7                          : ln(2, 3, 5, 7, 11, 13, 17)
+//!   `WHITENING0/1`                        : ln(19), ln(23)
+//!   `KEY_SCHEDULE_MULT`                   : ln(29)
+//!   `CLMUL_CONSTANT`                      : ln(31)
+//!   `LANE_OFFSETS`                        : ln(37..191) — 32 consecutive primes
+//!   C4, `KEY_SCHEDULE_BASE`, `CHAOS_BASE` : Golden Ratio (φ)
 
 // =============================================================================
 // ROUNDS

@@ -37,41 +37,69 @@ pub struct TachyonHasher {
 }
 
 impl TachyonHasher {
-    // =========================================================================
-    // INITIALIZATION
-    // =========================================================================
+    // ── Initialization ───────────────────────────────────────────────────────
 
-    /// Create new streaming hasher.
-    ///
-    /// # Errors
-    /// Returns `CpuFeatureError` if required CPU features are not available.
-    pub fn new() -> Result<Self, CpuFeatureError> {
-        Self::new_full(0, 0)
+    /// Create new streaming hasher with automatic backend selection.
+    pub fn new() -> Self {
+        Self::new_with_domain_seeded(0, 0)
     }
 
     /// Create new hasher with domain separation.
-    ///
-    /// # Errors
-    /// Returns `CpuFeatureError` if required CPU features are not available.
-    pub fn new_with_domain(domain: u64) -> Result<Self, CpuFeatureError> {
-        Self::new_full(domain, 0)
+    pub fn new_with_domain(domain: u64) -> Self {
+        Self::new_with_domain_seeded(domain, 0)
     }
 
     /// Full initialization with domain and seed.
-    ///
-    /// # Errors
-    /// Returns `CpuFeatureError` if required CPU features are not available.
-    pub fn new_full(domain: u64, seed: u64) -> Result<Self, CpuFeatureError> {
-        Ok(Self {
+    pub fn new_with_domain_seeded(domain: u64, seed: u64) -> Self {
+        Self {
             buffer: Vec::with_capacity(CHUNK_SIZE),
             tree: MerkleTree::new(domain, seed),
+            total_len: 0,
+        }
+    }
+
+    /// Force AVX-512 backend; returns `CpuFeatureError` if unsupported.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the required AVX-512 CPU features are unavailable.
+    pub fn try_avx512(domain: u64, seed: u64) -> Result<Self, CpuFeatureError> {
+        let kernel = crate::engine::dispatcher::try_avx512_kernel()?;
+        Ok(Self {
+            buffer: Vec::with_capacity(CHUNK_SIZE),
+            tree: MerkleTree::with_kernel(kernel, domain, seed),
             total_len: 0,
         })
     }
 
-    // =========================================================================
-    // STATE MODIFICATION
-    // =========================================================================
+    /// Force AES-NI backend; returns `CpuFeatureError` if unsupported.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the required AES-NI CPU features are unavailable.
+    pub fn try_aesni(domain: u64, seed: u64) -> Result<Self, CpuFeatureError> {
+        let kernel = crate::engine::dispatcher::try_aesni_kernel()?;
+        Ok(Self {
+            buffer: Vec::with_capacity(CHUNK_SIZE),
+            tree: MerkleTree::with_kernel(kernel, domain, seed),
+            total_len: 0,
+        })
+    }
+
+    /// Force portable software backend; always succeeds.
+    pub fn portable(domain: u64, seed: u64) -> Self {
+        Self {
+            buffer: Vec::with_capacity(CHUNK_SIZE),
+            tree: MerkleTree::with_kernel(
+                crate::engine::dispatcher::portable_kernel(),
+                domain,
+                seed,
+            ),
+            total_len: 0,
+        }
+    }
+
+    // ── State modification ───────────────────────────────────────────────────
 
     /// Add data to the hasher.
     ///
@@ -155,7 +183,7 @@ impl TachyonHasher {
 
 impl Default for TachyonHasher {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|e| panic!("{}", e))
+        Self::new()
     }
 }
 
@@ -196,12 +224,10 @@ impl HashMarker for TachyonHasher {}
 
 #[cfg(feature = "digest-trait")]
 impl KeyInit for TachyonHasher {
-    #[allow(clippy::expect_used)]
     fn new(key: &Key<Self>) -> Self {
-        // Safe conversion since KeySize is U32 (32 bytes)
-        let k: [u8; crate::kernels::constants::HASH_SIZE] =
-            key.as_slice().try_into().expect("Key length mismatch");
-        let mut hasher = Self::new().expect("Hardware support required");
+        let mut k = [0_u8; crate::kernels::constants::HASH_SIZE];
+        k.copy_from_slice(key.as_slice());
+        let mut hasher = Self::new();
         hasher.set_key(&k);
         hasher
     }

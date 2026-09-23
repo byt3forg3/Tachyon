@@ -47,16 +47,27 @@ impl MerkleTree {
         }
     }
 
+    /// Create a Merkle Tree engine with an explicitly chosen kernel.
+    pub fn with_kernel(kernel: KernelFn, domain: u64, seed: u64) -> Self {
+        Self {
+            stack: Vec::with_capacity(16),
+            kernel,
+            domain,
+            seed,
+            key: None,
+        }
+    }
+
     /// Process data slice (must be multiple of `CHUNK_SIZE`).
     pub fn process_slice(&mut self, data: &[u8]) {
         debug_assert!(data.len().is_multiple_of(CHUNK_SIZE));
 
-        // 1. Parallel Leaf Hashing
+        // ── 1. Parallel leaf hashing ─────────────────────────────────────────
         let leaves: Vec<[u8; 32]> = data.process_chunks(CHUNK_SIZE, |chunk| {
             (self.kernel)(chunk, DOMAIN_LEAF, self.seed, self.key.as_ref())
         });
 
-        // 2. Serial Tree Update
+        // ── 2. Serial tree update ────────────────────────────────────────────
         for leaf in leaves {
             self.push_leaf(leaf);
         }

@@ -2,10 +2,9 @@
 //!
 //! Minimal usage: `let hash = tachyon::hash(&data);`
 
-#![allow(clippy::pedantic, clippy::nursery)]
+#![allow(clippy::pedantic, clippy::nursery, clippy::print_stdout)]
 
 fn main() {
-    // Zero boilerplate:
     let data = b"Hello, World!";
     let hash = tachyon::hash(data);
 

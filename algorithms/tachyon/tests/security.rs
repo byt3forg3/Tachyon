@@ -152,21 +152,23 @@ fn test_keyed_hashing_consistency() {
     let key = [0x42u8; 32];
     let input = vec![0u8; 200 * 1024]; // Larger than CHUNK_SIZE
 
-    // 1. One-shot
+    // ── 1. One-shot ──────────────────────────────────────────────────────────
     let h1 = hash_keyed(&input, &key);
 
-    // 2. Streaming
-    let mut hasher = tachyon::Hasher::new_full(TachyonDomain::MessageAuth.to_u64(), 0).unwrap();
+    // ── 2. Streaming ─────────────────────────────────────────────────────────
+    let mut hasher =
+        tachyon::Hasher::new_with_domain_seeded(TachyonDomain::MessageAuth.to_u64(), 0);
     hasher.set_key(&key);
     hasher.update(&input);
     let h2 = hasher.finalize();
 
     assert_eq!(h1, h2, "One-shot MAC does not match streaming MAC");
 
-    // 3. Small one-shot vs streaming
+    // ── 3. Small one-shot vs streaming ───────────────────────────────────────
     let small_input = b"small";
     let h3 = hash_keyed(small_input, &key);
-    let mut hasher2 = tachyon::Hasher::new_full(TachyonDomain::MessageAuth.to_u64(), 0).unwrap();
+    let mut hasher2 =
+        tachyon::Hasher::new_with_domain_seeded(TachyonDomain::MessageAuth.to_u64(), 0);
     hasher2.set_key(&key);
     hasher2.update(small_input);
     let h4 = hasher2.finalize();
